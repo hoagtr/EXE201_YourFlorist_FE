@@ -43,27 +43,25 @@ const Contact: React.FC = () => {
       icon: <MapPin className="text-florist-500" size={24} />,
       title: 'Visit Our Shop',
       details: [
-        '123 Flower Street',
-        'Garden City, GC 12345',
-        'United States'
+        'Lô E2a-7, Đường D1',
+        'Khu Công nghệ cao',
+        'Phường Tăng Nhơn Phú, TPHCM'
       ]
     },
     {
       icon: <Phone className="text-florist-500" size={24} />,
       title: 'Call Us',
       details: [
-        'Main: (555) 123-4567',
-        'Fax: (555) 123-4568',
-        'Emergency: (555) 123-4569'
+        'Main: (84) 912 051 433',
       ]
     },
     {
       icon: <Mail className="text-florist-500" size={24} />,
       title: 'Email Us',
       details: [
-        'General: hello@yourflorist.com',
-        'Orders: orders@yourflorist.com',
-        'Support: support@yourflorist.com'
+        'General: dungpltse184549@fpt.edu.vn',
+        'Orders: dungpltse184549@fpt.edu.vn',
+        'Support: dungpltse184549@fpt.edu.vn'
       ]
     },
     {
@@ -274,17 +272,37 @@ const Contact: React.FC = () => {
         {/* Map Section */}
         <div className="mt-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">Find Our Shop</h2>
-          <div className="bg-gray-200 rounded-lg h-96 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="text-gray-400 mx-auto mb-4" size={48} />
-              <p className="text-gray-600">Interactive map would be embedded here</p>
-              <p className="text-sm text-gray-500 mt-2">123 Flower Street, Garden City, GC 12345</p>
-            </div>
+          <div className="bg-gray-100 rounded-lg overflow-hidden shadow-lg">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3918.6100963026653!2d106.8073080747239!3d10.8411276574896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752731176b07b1%3A0xb752b24b379bae5e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBGUFQgVFAuSENN!5e0!3m2!1svi!2s!4v1704535200000!5m2!1svi!2s"
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="w-full h-96"
+              title="YourFlorist Location Map"
+            />
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-gray-600">
+              <MapPin className="inline mr-2" size={16} />
+              Lô E2a-7, Đường D1, Khu Công nghệ cao, Phường Tăng Nhơn Phú, TPHCM
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=Lô+E2a-7,+Đường+D1,+Khu+Công+nghệ+cao,+Phường+Tăng+Nhơn+Phú,+TPHCM"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 bg-florist-500 text-white px-4 py-2 rounded-lg hover:bg-florist-600 transition-colors"
+            >
+              Open in Google Maps
+            </a>
           </div>
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-16">
+        {/* <div className="mt-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
@@ -334,7 +352,7 @@ const Contact: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
