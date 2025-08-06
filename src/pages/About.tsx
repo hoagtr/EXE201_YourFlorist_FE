@@ -7,53 +7,60 @@ const About: React.FC = () => {
 
   const teamMembers = [
     {
-      name: 'Sarah Johnson',
-      role: 'Founder & Lead Florist',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
-      bio: 'With over 15 years of experience in floral design, Sarah brings creativity and passion to every arrangement.'
+      name: 'Phạm Lê Thành Dũng',
+      role: 'CEO',
+      image: 'https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/475568506_594519550031147_5757941264677618393_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHuP_F0xCymP_IWQ2rmQg2ICfQWK-T0px4J9BYr5PSnHvKpEJI-c2lVj2zMEjkz593ftvmq6MbQSFssOo6whJe3&_nc_ohc=dwol7gPikX8Q7kNvwH31TzE&_nc_oc=AdkPra78vR7T4jOBN7SeIas3UF1oHlt33UwErazuy8Jz2yPxMw2qGXFCnISrwRXOyIo&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=1snoeLN6zm9tcMinxPrP_A&oh=00_AfVGTovtueHINAJTuaHh9lT5RAnV31lXr9KYnK5UknObtw&oe=68993A72'
     },
     {
-      name: 'Michael Chen',
-      role: 'Senior Florist',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
-      bio: 'Specializing in wedding and event arrangements, Michael creates stunning designs that capture special moments.'
+      name: 'Trương Nguyễn Đăng Khoa ',
+      role: 'COO',
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face'
     },
     {
-      name: 'Emily Rodriguez',
-      role: 'Customer Experience Manager',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face',
-      bio: 'Emily ensures every customer receives personalized service and finds the perfect flowers for their needs.'
+      name: 'Trần Minh Hoàng',
+      role: 'IT System Administrator',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face'
+    },
+    {
+      name: 'Trần Anh Toàn',
+      role: 'Sales Manager',
+      image: 'https://scontent.fsgn2-11.fna.fbcdn.net/v/t39.30808-6/485830085_3839499696312943_1887980360961012277_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeGiXmW9JfoMi7MBu0wNAYPQQIg8jsMSMdNAiDyOwxIx0x2f74ppcwS-hcWkOg-S1AHcNCC-dbl0QNW5W72U__bs&_nc_ohc=UAdsZn6OkjQQ7kNvwHJQ1Fv&_nc_oc=AdmnMW7PvDLUJKuzZ8WrYE09hdDfo_jfDCBo6jZD2H8DJEVPXgrLouvrfcPpjouR3DIBVFA3q7_DeQ8HiFmIzHLp&_nc_zt=23&_nc_ht=scontent.fsgn2-11.fna&_nc_gid=3nfeMCgTIhj1CsrPs0yM9g&oh=00_AfWq_C-lT65iEI5eAZLy2fa27_tRG8a0cjNi0J_L20YXHg&oe=68992DC9'
+    },
+    {
+      name: 'Phạm Thế Hiển',
+      role: 'Marketing Manager',
+      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face'
     }
   ];
 
   const values = [
     {
       icon: <Flower className="text-florist-500" size={32} />,
-      title: 'Quality & Freshness',
-      description: 'We source only the freshest flowers from local growers and premium suppliers worldwide.'
+      title: 'Personalization & Quality',
+      description: 'We provide fresh, premium flowers with complete customization options to create your perfect arrangement.'
     },
     {
       icon: <Heart className="text-florist-500" size={32} />,
-      title: 'Passion & Creativity',
-      description: 'Our team of expert florists brings creativity and passion to every arrangement we create.'
+      title: 'Emotional Connection',
+      description: 'Every bouquet tells a story. We help you express your deepest emotions through personalized floral designs.'
     },
     {
       icon: <Award className="text-florist-500" size={32} />,
-      title: 'Excellence',
-      description: 'We strive for excellence in every aspect of our service, from design to delivery.'
+      title: 'Innovation & Excellence',
+      description: 'Our cutting-edge customization platform combines technology with traditional florist expertise.'
     },
     {
       icon: <Users className="text-florist-500" size={32} />,
-      title: 'Community',
-      description: 'We\'re proud to be part of our local community and support local growers and businesses.'
+      title: 'Customer Empowerment',
+      description: 'We believe customers should have full control over their floral experience, from selection to final arrangement.'
     }
   ];
 
   const stats = [
-    { number: '10+', label: 'Years of Experience' },
-    { number: '5000+', label: 'Happy Customers' },
-    { number: '1000+', label: 'Events Decorated' },
-    { number: '50+', label: 'Flower Varieties' }
+    { number: '2025', label: 'Year Founded' },
+    { number: '1000+', label: 'Custom Arrangements' },
+    { number: '500+', label: 'Happy Customers' },
+    { number: '100+', label: 'Flower Varieties' }
   ];
 
   return (
@@ -66,8 +73,7 @@ const About: React.FC = () => {
               Our Story
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Founded in 2014, YourFlorist has been bringing beauty and joy to our community 
-              through carefully crafted floral arrangements and exceptional service.
+              Founded in 2025, YourFlorist was born from the vision to help customers create personalized floral arrangements that tell their unique stories and express their deepest emotions.
             </p>
           </div>
         </div>
@@ -81,19 +87,13 @@ const About: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-6">How It All Began</h2>
             <div className="space-y-4 text-gray-600 leading-relaxed">
               <p>
-                What started as a small passion project in Sarah's garage has grown into one of the 
-                most trusted florist shops in the region. Our journey began with a simple belief: 
-                that flowers have the power to transform any moment into something extraordinary.
+                What started as an innovative idea in 2025 has evolved into a revolutionary platform that empowers customers to customize every detail of their floral arrangements. Our journey began with a simple belief: that every bouquet should tell a personal story and convey the exact emotions you want to express.
               </p>
               <p>
-                Today, we're proud to serve thousands of customers, creating beautiful arrangements 
-                for weddings, corporate events, and everyday moments that matter. Our commitment to 
-                quality, creativity, and customer service remains at the heart of everything we do.
+                Today, we're proud to offer a unique customization experience where customers can handpick each flower, color, and arrangement style to create something truly meaningful. Whether it's celebrating love, friendship, sympathy, or joy, our platform helps you craft the perfect floral message that speaks from the heart.
               </p>
               <p>
-                We work closely with local growers and premium suppliers to ensure we always have 
-                the freshest, most beautiful flowers available. Every arrangement is handcrafted by 
-                our expert team with attention to detail and a passion for floral design.
+                We believe that flowers are more than just beautiful decorations - they are a language of emotions. Through our innovative customization tools and carefully curated selection of premium flowers, we help you transform your feelings into stunning visual expressions that leave lasting impressions.
               </p>
             </div>
           </div>
@@ -157,11 +157,10 @@ const About: React.FC = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Our passionate team of florists and customer service experts are here to help you 
-              find the perfect flowers for every occasion.
+              Our talented team combines technical expertise with floral artistry to bring you the ultimate customization experience.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {teamMembers.map((member, index) => (
               <div key={index} className="text-center">
                 <img
@@ -171,51 +170,87 @@ const About: React.FC = () => {
                 />
                 <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
                 <p className="text-florist-600 mb-3">{member.role}</p>
-                <p className="text-gray-600">{member.bio}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Contact Info */}
-        <div className="bg-gray-50 rounded-lg p-8">
-          <div className="text-center mb-8">
+        <div className="bg-gradient-to-br from-florist-50 to-white rounded-xl shadow-lg p-8 border border-florist-100">
+          <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Visit Our Shop</h2>
-            <p className="text-gray-600">We'd love to meet you in person and help you find the perfect flowers</p>
+            <p className="text-gray-600 text-lg">We'd love to meet you in person and help you find the perfect flowers</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex items-center space-x-3">
-              <MapPin className="text-florist-500" size={24} />
-              <div>
-                <h3 className="font-semibold text-gray-900">Address</h3>
-                <p className="text-gray-600">123 Flower Street<br />Garden City, GC 12345</p>
+          
+          {/* Contact Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-florist-100 rounded-full flex items-center justify-center mb-4">
+                  <MapPin className="text-florist-600" size={24} />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Address</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Lô E2a-7, Đường D1<br />
+                  Khu Công nghệ cao<br />
+                  Phường Tăng Nhơn Phú, TPHCM
+                </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Phone className="text-florist-500" size={24} />
-              <div>
-                <h3 className="font-semibold text-gray-900">Phone</h3>
-                <p className="text-gray-600">(555) 123-4567</p>
+            
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-florist-100 rounded-full flex items-center justify-center mb-4">
+                  <Phone className="text-florist-600" size={24} />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Phone</h3>
+                <p className="text-gray-600">
+                  <a href="tel:+84912051433" className="hover:text-florist-600 transition-colors">
+                    (84) 912 051 433
+                  </a>
+                </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Mail className="text-florist-500" size={24} />
-              <div>
-                <h3 className="font-semibold text-gray-900">Email</h3>
-                <p className="text-gray-600">hello@yourflorist.com</p>
+            
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border border-gray-100">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-florist-100 rounded-full flex items-center justify-center mb-4">
+                  <Mail className="text-florist-600" size={24} />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
+                <p className="text-gray-600">
+                  <a href="mailto:dungpltse184549@fpt.edu.vn" className="hover:text-florist-600 transition-colors break-all">
+                    dungpltse184549@fpt.edu.vn
+                  </a>
+                </p>
               </div>
             </div>
           </div>
-          <div className="mt-8 text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Clock className="text-florist-500" size={20} />
-              <span className="font-semibold text-gray-900">Business Hours</span>
+          
+          {/* Business Hours */}
+          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="w-8 h-8 bg-florist-100 rounded-full flex items-center justify-center">
+                  <Clock className="text-florist-600" size={16} />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Business Hours</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-600">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-800">Monday - Friday</p>
+                  <p>9:00 AM - 7:00 PM</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-800">Saturday</p>
+                  <p>9:00 AM - 6:00 PM</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-800">Sunday</p>
+                  <p>10:00 AM - 4:00 PM</p>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600">
-              Monday - Friday: 9:00 AM - 7:00 PM<br />
-              Saturday: 9:00 AM - 6:00 PM<br />
-              Sunday: 10:00 AM - 4:00 PM
-            </p>
           </div>
         </div>
 
@@ -223,14 +258,14 @@ const About: React.FC = () => {
         <div className="text-center mt-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Experience the Difference?</h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Browse our collection of beautiful flowers and arrangements, or contact us for custom designs.
+            Start creating your personalized floral arrangement today, or reach out to learn more about our customization platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={() => navigate('/products')}
               className="bg-florist-500 text-white px-8 py-3 rounded-lg hover:bg-florist-600 transition-colors"
             >
-              Browse Our Collection
+              Start Customizing
             </button>
             <button
               onClick={() => navigate('/contact')}
