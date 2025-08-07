@@ -22,12 +22,23 @@ const Products: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
-          apiService.getProducts(),
+        const [bouquetsData, categoriesData] = await Promise.all([
+          apiService.getActiveBouquets(),
           apiService.getCategories()
         ]);
-        
-        setProducts(productsData);
+        // Map bouquet data to Product type
+        const mappedProducts = bouquetsData.map((bouquet: any) => ({
+          id: bouquet.id?.toString() || '',
+          name: bouquet.name,
+          description: bouquet.description,
+          price: bouquet.price || 0,
+          image: bouquet.image || '',
+          category: bouquet.category?.name || bouquet.categoryId?.toString() || '',
+          inStock: bouquet.isActive ?? true,
+          quantity: 1,
+          tags: [],
+        }));
+        setProducts(mappedProducts);
         setCategories(categoriesData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -83,8 +94,8 @@ const Products: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Products</h1>
-        <p className="text-gray-600">Discover our beautiful collection of flowers and arrangements</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Active Bouquets</h1>
+        <p className="text-gray-600">Discover our beautiful collection of available bouquets and arrangements</p>
       </div>
 
       {/* Search and Filters */}
@@ -95,7 +106,7 @@ const Products: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search bouquets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-transparent"
@@ -193,7 +204,7 @@ const Products: React.FC = () => {
       {/* Results Count */}
       <div className="mb-6">
         <p className="text-gray-600">
-          Showing {filteredProducts.length} of {products.length} products
+          Showing {filteredProducts.length} of {products.length} bouquets
         </p>
       </div>
 
@@ -212,7 +223,7 @@ const Products: React.FC = () => {
           <div className="text-gray-400 mb-4">
             <Search size={64} className="mx-auto" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No bouquets found</h3>
           <p className="text-gray-600 mb-4">
             Try adjusting your search or filter criteria
           </p>
