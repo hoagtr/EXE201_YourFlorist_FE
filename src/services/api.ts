@@ -49,6 +49,11 @@ class ApiService {
     return response.data.data;
   }
 
+  async getActiveBouquets(): Promise<Product[]> {
+    const response: AxiosResponse<ApiResponse<Product[]>> = await this.api.get('/bouquets/active');
+    return response.data.data;
+  }
+
   async getProduct(id: string): Promise<Product> {
     const response: AxiosResponse<ApiResponse<Product>> = await this.api.get(`/products/${id}`);
     return response.data.data;
@@ -61,8 +66,8 @@ class ApiService {
 
   // Category endpoints
   async getCategories(): Promise<Category[]> {
-    const response: AxiosResponse<ApiResponse<Category[]>> = await this.api.get('/categories');
-    return response.data.data;
+    const response: AxiosResponse<ApiResponse<{ content: Category[] }>> = await this.api.get('/categories/active?page=0&size=50');
+    return response.data.data.content;
   }
 
   // Order endpoints

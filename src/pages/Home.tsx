@@ -19,15 +19,24 @@ const Home: React.FC = () => {
     const fetchData = async () => {
       try {
         console.log('Attempting to fetch data from API...');
-        const [products, categoriesData] = await Promise.all([
-          apiService.getProducts(),
+        const [bouquetsData, categoriesData] = await Promise.all([
+          apiService.getActiveBouquets(),
           apiService.getCategories()
         ]);
-        
-        console.log('API data fetched successfully:', { products, categoriesData });
-        
+        // Map bouquet data to Product type
+        const mappedProducts = bouquetsData.map((bouquet: any) => ({
+          id: bouquet.id?.toString() || '',
+          name: bouquet.name,
+          description: bouquet.description,
+          price: bouquet.price || 0,
+          image: bouquet.image || '',
+          category: bouquet.category?.name || bouquet.categoryId?.toString() || '',
+          inStock: bouquet.isActive ?? true,
+          quantity: 1,
+          tags: [],
+        }));
         // Get first 6 products as featured
-        setFeaturedProducts(products.slice(0, 6));
+        setFeaturedProducts(mappedProducts.slice(0, 6));
         setCategories(categoriesData);
       } catch (error) {
         console.error('Error fetching data:', error);
