@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Category, Product } from '../types';
@@ -11,36 +11,59 @@ const Categories: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce search term to avoid too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [categoriesData, productsData] = await Promise.all([
-          apiService.getCategories(),
-          apiService.getProducts()
-        ]);
+        setError(null);
+        
+        // Fetch categories first (this should work without authentication)
+        const categoriesData = await apiService.getCategories(debouncedSearchTerm);
         setCategories(categoriesData);
-        setProducts(productsData);
+        
+        // Try to fetch products, but don't fail if it doesn't work
+        try {
+          const productsData = await apiService.getProducts();
+          setProducts(productsData);
+        } catch (productsErr) {
+          console.warn('Failed to fetch products, but categories loaded successfully:', productsErr);
+          // Don't set error for products failure, just log it
+        }
       } catch (err) {
         setError('Failed to load categories');
-        console.error('Error fetching data:', err);
+        console.error('Error fetching categories:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [debouncedSearchTerm]);
 
   const getProductCount = (categoryName: string) => {
+    if (!products || products.length === 0) {
+      return 0; // Return 0 if products failed to load
+    }
     return products.filter(product => product.category === categoryName).length;
   };
 
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategories = categories
+    .filter(category => category.isActive !== false) // Only show active categories
+    .filter(category =>
+      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   if (loading) {
     return (
@@ -89,6 +112,11 @@ const Categories: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-florist-500 focus:border-transparent"
             />
+            {loading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-florist-500"></div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -96,16 +124,22 @@ const Categories: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCategories.map((category) => (
             <div
-              key={category.id}
+              key={category.id || category.categoryId}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
               onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
             >
               <div className="relative">
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                {category.image ? (
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-48 bg-gradient-to-br from-florist-100 to-florist-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                    <Flower size={64} className="text-florist-600" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-all"></div>
                 <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-full px-3 py-1 text-sm font-semibold text-gray-800">
                   {getProductCount(category.name)} items
@@ -151,13 +185,13 @@ const Categories: React.FC = () => {
         {/* Featured Categories Section */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Popular Categories</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.slice(0, 4).map((category) => (
-              <div
-                key={category.id}
-                className="text-center group cursor-pointer"
-                onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
-              >
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             {categories.slice(0, 4).map((category) => (
+               <div
+                 key={category.id || category.categoryId}
+                 className="text-center group cursor-pointer"
+                 onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
+               >
                 <div className="w-20 h-20 mx-auto mb-4 bg-florist-100 rounded-full flex items-center justify-center group-hover:bg-florist-200 transition-colors">
                   <Flower size={32} className="text-florist-600" />
                 </div>

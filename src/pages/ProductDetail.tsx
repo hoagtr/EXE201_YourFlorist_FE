@@ -27,11 +27,23 @@ const ProductDetail: React.FC = () => {
       try {
         setLoading(true);
         const productData = await apiService.getProduct(id);
-        setProduct(productData);
-        
+        // Map product data to Product type
+        const mappedProduct = {
+          id: productData.id?.toString() || '',
+          name: productData.name,
+          description: productData.description,
+          price: productData.price || 0,
+          image: productData.image || '',
+          category: productData.category || '',
+          inStock: productData.inStock ?? true,
+          quantity: productData.quantity || 1,
+          tags: productData.tags || [],
+        };
+        setProduct(mappedProduct);
         // Fetch related products from the same category
-        const related = await apiService.getProductsByCategory(productData.category);
-        setRelatedProducts(related.filter(p => p.id !== id).slice(0, 4));
+        // Optionally, you can use getActiveBouquets and filter by category
+        // For now, leave relatedProducts empty or implement as needed
+        setRelatedProducts([]);
       } catch (err) {
         setError('Failed to load product details');
         console.error('Error fetching product:', err);

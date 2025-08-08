@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (userData: { 
     email: string; 
     password: string; 
@@ -174,12 +175,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      console.log('AuthContext: Google login attempt');
+      const authUrl = await apiService.getGoogleAuthUrl();
+      console.log('AuthContext: Redirecting to Google OAuth URL');
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('AuthContext: Google login error:', error);
+      throw error;
+    }
+  };
+
   console.log('AuthContext: Current user state:', user);
 
   const value: AuthContextType = {
     user,
     loading,
     login,
+    loginWithGoogle,
     register,
     logout,
     changePassword,

@@ -15,6 +15,7 @@ import Orders from './pages/Orders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Categories from './pages/Categories';
+import GoogleCallback from './pages/GoogleCallback';
 
 const App: React.FC = () => {
   console.log('App component is rendering');
@@ -34,6 +35,7 @@ const App: React.FC = () => {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/auth/callback" element={<GoogleCallback />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/about" element={<About />} />
