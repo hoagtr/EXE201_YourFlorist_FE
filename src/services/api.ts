@@ -65,9 +65,46 @@ class ApiService {
   }
 
   // Category endpoints
-  async getCategories(): Promise<Category[]> {
-    const response: AxiosResponse<ApiResponse<{ content: Category[] }>> = await this.api.get('/categories/active?page=0&size=50');
-    return response.data.data.content;
+  async getCategories(keyword?: string, page: number = 0, size: number = 50): Promise<Category[]> {
+    try {
+      let url = `/categories/active?page=${page}&size=${size}`;
+      if (keyword && keyword.trim()) {
+        url += `&keyword=${encodeURIComponent(keyword.trim())}`;
+      }
+      
+      console.log('Fetching categories from:', `${API_BASE_URL}${url}`);
+      
+      // Make a direct request without authentication for categories
+      const response: AxiosResponse<ApiResponse<{ content: Category[] }>> = await axios.get(`${API_BASE_URL}${url}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000,
+      });
+      
+      console.log('Categories response:', response.data);
+      return response.data.data.content;
+    } catch (error: any) {
+      console.error('Get categories error:', error);
+      
+      if (error.response?.status === 400) {
+        throw new Error('Invalid search parameters. Please try again.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Categories not found.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Access denied. Please try again later.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        throw new Error('Failed to load categories. Please try again.');
+      }
+    }
+  }
+
+  async searchCategories(keyword: string): Promise<Category[]> {
+    return this.getCategories(keyword, 0, 50);
   }
 
   // Order endpoints
@@ -338,6 +375,47 @@ class ApiService {
         throw new Error('Network error. Please check your connection and try again.');
       } else {
         throw new Error('Failed to reset password. Please try again.');
+      }
+    }
+  }
+
+  // Google OAuth endpoints
+  async getGoogleAuthUrl(): Promise<string> {
+    try {
+      const response: AxiosResponse<{ authURL: string }> = await this.api.get('/auth/url');
+      return response.data.authURL;
+    } catch (error: any) {
+      console.error('Get Google auth URL error:', error);
+      
+      if (error.response?.status === 500) {
+        throw new Error('Google login is currently unavailable. Please try again later or use email login.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Google OAuth configuration error. Please contact support.');
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        throw new Error('Google login is temporarily unavailable. Please try again later.');
+      }
+    }
+  }
+
+  async handleGoogleCallback(code: string): Promise<string> {
+    try {
+      const response: AxiosResponse<{ token: string }> = await this.api.get(`/auth/callback?code=${code}`);
+      return response.data.token;
+    } catch (error: any) {
+      console.error('Google callback error:', error);
+      
+      if (error.response?.status === 400) {
+        throw new Error('Invalid authorization code. Please try logging in again.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Google OAuth configuration error. Please contact support.');
+      } else if (error.response?.status === 500) {
+        throw new Error('Google login failed. Please try again.');
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        throw new Error('Google login failed. Please try again.');
       }
     }
   }

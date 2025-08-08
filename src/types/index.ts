@@ -46,10 +46,12 @@ export interface Order {
 }
 
 export interface Category {
-  id: string;
+  id?: string;
+  categoryId?: number;
   name: string;
   description: string;
-  image: string;
+  image?: string;
+  isActive?: boolean;
 }
 
 export interface ApiResponse<T> {
