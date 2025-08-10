@@ -9,6 +9,9 @@ interface CartContextType {
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  getShippingCost: () => number;
+  getTaxAmount: () => number;
+  getTotalWithFees: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -92,6 +95,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
   };
 
+  const getShippingCost = () => {
+    return items.length > 0 ? 9.99 : 0;
+  };
+
+  const getTaxAmount = () => {
+    return getTotalPrice() * 0.08; // 8% tax rate
+  };
+
+  const getTotalWithFees = () => {
+    return getTotalPrice() + getShippingCost() + getTaxAmount();
+  };
+
   const value: CartContextType = {
     items,
     addToCart,
@@ -100,6 +115,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     clearCart,
     getTotalItems,
     getTotalPrice,
+    getShippingCost,
+    getTaxAmount,
+    getTotalWithFees,
   };
 
   return (
