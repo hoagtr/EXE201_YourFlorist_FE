@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
 const Cart: React.FC = () => {
-  const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotalPrice, getShippingCost, getTaxAmount, getTotalWithFees, clearCart } = useCart();
   const { user } = useAuth();
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
@@ -147,17 +147,17 @@ const Cart: React.FC = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Shipping</span>
-                <span className="text-gray-900">$9.99</span>
+                <span className="text-gray-900">${getShippingCost().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Tax</span>
-                <span className="text-gray-900">${(getTotalPrice() * 0.08).toFixed(2)}</span>
+                <span className="text-gray-900">${getTaxAmount().toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between font-semibold text-lg">
                   <span className="text-gray-900">Total</span>
                   <span className="text-gray-900">
-                    ${(getTotalPrice() + 9.99 + (getTotalPrice() * 0.08)).toFixed(2)}
+                    ${getTotalWithFees().toFixed(2)}
                   </span>
                 </div>
               </div>

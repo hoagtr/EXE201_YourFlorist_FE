@@ -1,0 +1,416 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { User, MapPin, Phone, Mail, Home, Building, Globe, Hash } from 'lucide-react';
+
+interface CheckoutForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+const Checkout: React.FC = () => {
+  const navigate = useNavigate();
+  const { items, getTotalPrice, getShippingCost, getTaxAmount, getTotalWithFees, clearCart } = useCart();
+  const { user } = useAuth();
+
+  const [formData, setFormData] = useState<CheckoutForm>({
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: ''
+  });
+
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    try {
+      // Simulate API call to backend
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        subtotal: getTotalPrice(),
+        shipping: getShippingCost(),
+        tax: getTaxAmount(),
+        total: getTotalWithFees(),
+        shippingAddress: {
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country
+        },
+        customerInfo: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone
+        }
+      };
+
+      // This would be your actual API call
+      // const response = await api.post('/orders', orderData);
+
+      // Simulate successful order
+      setTimeout(() => {
+        clearCart();
+        navigate('/checkout/success');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Checkout error:', error);
+      navigate('/checkout/fail');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
+            <p className="text-gray-600 mb-8">Add some items to your cart before checking out.</p>
+            <button
+              onClick={() => navigate('/products')}
+              className="bg-florist-500 text-white px-6 py-3 rounded-md hover:bg-florist-600 transition-colors"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <h2 className="text-lg font-medium text-gray-900 mb-8">Order Summary</h2>
+            <div className="border-t border-gray-200 py-6">
+              {items.map((item) => (
+                <div key={item.product.id} className="flex py-6">
+                  <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                    <img
+                      src={item.product.image}
+                      alt={item.product.name}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                  <div className="ml-4 flex flex-1 flex-col">
+                    <div>
+                      <div className="flex justify-between text-base font-medium text-gray-900">
+                        <h3>{item.product.name}</h3>
+                        <p className="ml-4">${(item.product.price * item.quantity).toFixed(2)}</p>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">Qty: {item.quantity}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="border-t border-gray-200 py-6">
+                <div className="flex justify-between text-base font-medium text-gray-900">
+                  <p>Subtotal</p>
+                  <p>${getTotalPrice().toFixed(2)}</p>
+                </div>
+                <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
+                  <p>Shipping</p>
+                  <p>${getShippingCost().toFixed(2)}</p>
+                </div>
+                <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
+                  <p>Tax</p>
+                  <p>${getTaxAmount().toFixed(2)}</p>
+                </div>
+                <div className="flex justify-between text-lg font-medium text-gray-900 mt-4 pt-4 border-t border-gray-200">
+                  <p>Total</p>
+                  <p>${getTotalWithFees().toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Checkout Form */}
+          <div className="mt-10 lg:col-span-1 lg:mt-0">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Customer Information */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center mb-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-florist-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-florist-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Customer Information</h3>
+                    <p className="text-sm text-gray-500">Tell us about yourself</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                      First name
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="firstName"
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter first name"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Last name
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="lastName"
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter last name"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="sm:col-span-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter email address"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="sm:col-span-2">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone number
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        name="phone"
+                        id="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter phone number"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center mb-6">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-florist-100 rounded-full flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-florist-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Shipping Address</h3>
+                    <p className="text-sm text-gray-500">Where should we deliver your order?</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-2">
+                      Street address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="street"
+                        id="street"
+                        value={formData.street}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter street address"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Home className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                      City
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="city"
+                        id="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter city"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Building className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                      State / Province
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="state"
+                        id="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter state"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      ZIP / Postal code
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="zipCode"
+                        id="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter ZIP code"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Hash className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="country"
+                        id="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-florist-500 sm:text-sm transition-colors"
+                        placeholder="Enter country"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Globe className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full bg-florist-500 border border-transparent rounded-lg shadow-sm py-4 px-6 text-base font-semibold text-white hover:bg-florist-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-florist-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
+                >
+                  {isProcessing ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    `Proceed to Payment - $${getTotalWithFees().toFixed(2)}`
+                  )}
+                </button>
+                <p className="mt-3 text-sm text-gray-500 text-center">
+                  You will be redirected to our secure payment partner to complete your order.
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;
