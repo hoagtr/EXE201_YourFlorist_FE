@@ -560,6 +560,16 @@ class ApiService {
       throw err;
     }
   }
+
+  // Payments
+  async startPayment(orderId: number | string): Promise<string> {
+    // Uses the authorized axios instance; JWT added by interceptor
+    const res: AxiosResponse<any> = await this.api.post('/payment', { orderId });
+    // Try to extract checkoutUrl defensively across possible shapes
+    const data: any = res?.data;
+    const checkoutUrl = data?.data?.checkoutUrl || data?.checkoutUrl || data?.data?.url || data?.url || '';
+    return checkoutUrl;
+  }
 }
 
 export const apiService = new ApiService(); 

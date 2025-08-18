@@ -65,7 +65,19 @@ const Checkout: React.FC = () => {
         }))
       };
 
-      await apiService.placeOrder(payload);
+      const created = await apiService.placeOrder(payload);
+      const orderId = created?.id || created?.orderId;
+      if (orderId) {
+        try {
+          const checkoutUrl = await apiService.startPayment(orderId);
+          if (checkoutUrl) {
+            window.location.assign(checkoutUrl);
+            return; // stop further processing; browser will navigate
+          }
+        } catch (payErr) {
+          console.error('Start payment failed:', payErr);
+        }
+      }
 
       // Optional: store local receipt for review eligibility as before
       if (user) {
