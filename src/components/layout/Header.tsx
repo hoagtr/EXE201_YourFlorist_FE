@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
@@ -52,22 +52,17 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 relative z-50 pointer-events-auto">
             {/* Search */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 text-gray-600 hover:text-florist-600 transition-colors"
+              className="inline-flex items-center justify-center p-2 leading-none text-gray-600 hover:text-florist-600 transition-colors"
             >
               <Search size={20} />
             </button>
 
-            {/* Wishlist */}
-            <Link to="/wishlist" className="p-2 text-gray-600 hover:text-florist-600 transition-colors">
-              <Heart size={20} />
-            </Link>
-
             {/* Cart */}
-            <Link to="/cart" className="relative p-2 text-gray-600 hover:text-florist-600 transition-colors">
+            <Link to="/cart" className="relative inline-flex items-center justify-center p-2 leading-none text-gray-600 hover:text-florist-600 transition-colors">
               <ShoppingCart size={20} />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-1 -right-1 bg-florist-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -79,7 +74,7 @@ const Header: React.FC = () => {
             {/* User Menu */}
             {user ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 p-2 text-gray-600 hover:text-florist-600 transition-colors rounded-full hover:bg-gray-100">
+                <button className="inline-flex items-center space-x-2 p-2 leading-none text-gray-600 hover:text-florist-600 transition-colors rounded-full hover:bg-gray-100">
                   <div className="w-8 h-8 bg-florist-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
                       {user.name.charAt(0).toUpperCase()}

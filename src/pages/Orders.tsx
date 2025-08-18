@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
+import { formatCurrency } from '../utils/currency';
 import { Order } from '../types';
-import { Package, Calendar, DollarSign, MapPin, Truck, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { Package, Calendar, DollarSign, MapPin, Truck, CheckCircle, Clock, AlertCircle, XCircle, RefreshCcw } from 'lucide-react';
 
 const Orders: React.FC = () => {
   const navigate = useNavigate();
@@ -12,31 +13,53 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+
+  const loadOrders = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const uid = isNaN(Number(user.id)) ? user.id : Number(user.id);
+      const params: any = {};
+      if (statusFilter) params.status = statusFilter as any;
+      const list = await apiService.getUserOrders(uid as any, params);
+      setOrders(list as any);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching orders (with params). Retrying without filters...', err);
+      try {
+        const uid = isNaN(Number(user.id)) ? user.id : Number(user.id);
+        const list = await apiService.getUserOrders(uid as any);
+        setOrders(list as any);
+        setError(null);
+      } catch (err2) {
+        setError('Failed to load orders');
+        console.error('Error fetching orders:', err2);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
+    loadOrders();
+  }, [user, navigate, statusFilter]);
 
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const ordersData = await apiService.getOrders();
-        setOrders(ordersData);
-      } catch (err) {
-        setError('Failed to load orders');
-        console.error('Error fetching orders:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [user, navigate]);
+  const confirmDelivered = async (orderId: string | number) => {
+    try {
+      await apiService.confirmCustomerStatus(orderId, 'DELIVERED', 'Customer confirmed delivery');
+      await loadOrders();
+    } catch (e) {
+      console.error('Confirm delivery failed', e);
+    }
+  };
 
   const getOrderStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'delivered':
         return <CheckCircle size={20} className="text-green-500" />;
       case 'shipped':
@@ -53,7 +76,7 @@ const Orders: React.FC = () => {
   };
 
   const getOrderStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'delivered': return 'bg-green-100 text-green-800';
       case 'shipped': return 'bg-blue-100 text-blue-800';
       case 'processing': return 'bg-yellow-100 text-yellow-800';
@@ -64,7 +87,7 @@ const Orders: React.FC = () => {
   };
 
   const getOrderStatusText = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'delivered': return 'Delivered';
       case 'shipped': return 'Shipped';
       case 'processing': return 'Processing';
@@ -90,9 +113,31 @@ const Orders: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>
-          <p className="text-gray-600">Track your orders and view order history</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">My Orders</h1>
+            <p className="text-gray-600">Track your orders and view order history</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md bg-white"
+            >
+              <option value="">All statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+            <button
+              onClick={loadOrders}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50"
+            >
+              <RefreshCcw size={16} className="mr-2" /> Refresh
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -118,7 +163,7 @@ const Orders: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => (
+            {orders.map((order: any) => (
               <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 {/* Order Header */}
                 <div className="p-6 border-b border-gray-200">
@@ -140,44 +185,48 @@ const Orders: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
                       <Package size={16} className="text-gray-400" />
-                      <span className="text-gray-600">{order.items.length} items</span>
+                      <span className="text-gray-600">{order.items?.length ?? 0} items</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <DollarSign size={16} className="text-gray-400" />
-                      <span className="text-gray-600">Total: ${order.total.toFixed(2)}</span>
+                      <span className="text-gray-600">Total: {formatCurrency(Number(order.total ?? 0))}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <MapPin size={16} className="text-gray-400" />
                       <span className="text-gray-600">
-                        {order.shippingAddress.city}, {order.shippingAddress.state}
+                        {order.shippingAddress?.city}, {order.shippingAddress?.state}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Order Items */}
-                <div className="p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4">Order Items</h4>
-                  <div className="space-y-3">
-                    {order.items.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4">
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                        <div className="flex-1">
-                          <h5 className="font-medium text-gray-900">{item.product.name}</h5>
-                          <p className="text-sm text-gray-600">{item.product.category}</p>
+                {order.items && order.items.length > 0 && (
+                  <div className="p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4">Order Items</h4>
+                    <div className="space-y-3">
+                      {order.items.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center space-x-4">
+                          <img
+                            src={item.product?.image || item.product?.imageUrl || ''}
+                            alt={item.product?.name}
+                            className="w-16 h-16 object-cover rounded-md"
+                          />
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{item.product?.name}</h5>
+                            <p className="text-sm text-gray-600">
+                              {typeof item.product?.category === 'string' ? item.product?.category : item.product?.category?.name}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-gray-900">{formatCurrency(Number(item.product?.price ?? 0))}</p>
+                            <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900">${item.product.price.toFixed(2)}</p>
-                          <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Order Details */}
                 <div className="bg-gray-50 p-6">
@@ -185,11 +234,11 @@ const Orders: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">Shipping Address</h4>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>{order.shippingAddress.street}</p>
+                        <p>{order.shippingAddress?.street}</p>
                         <p>
-                          {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
+                          {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.zipCode}
                         </p>
-                        <p>{order.shippingAddress.country}</p>
+                        <p>{order.shippingAddress?.country}</p>
                       </div>
                     </div>
                     <div>
@@ -197,7 +246,7 @@ const Orders: React.FC = () => {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Subtotal:</span>
-                          <span className="text-gray-900">${order.total.toFixed(2)}</span>
+                          <span className="text-gray-900">{formatCurrency(Number(order.total ?? 0))}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Shipping:</span>
@@ -205,7 +254,7 @@ const Orders: React.FC = () => {
                         </div>
                         <div className="flex justify-between border-t border-gray-200 pt-2">
                           <span className="font-semibold text-gray-900">Total:</span>
-                          <span className="font-semibold text-gray-900">${order.total.toFixed(2)}</span>
+                          <span className="font-semibold text-gray-900">{formatCurrency(Number(order.total ?? 0))}</span>
                         </div>
                       </div>
                     </div>
@@ -221,12 +270,14 @@ const Orders: React.FC = () => {
                     >
                       {selectedOrder?.id === order.id ? 'Hide Details' : 'View Details'}
                     </button>
-                    <button
-                      onClick={() => navigate(`/product/${order.items[0]?.product.id}`)}
-                      className="flex-1 border border-florist-500 text-florist-500 px-4 py-2 rounded-lg hover:bg-florist-50 transition-colors"
-                    >
-                      Reorder
-                    </button>
+                    {String(order.status).toUpperCase() === 'DELIVERED' && (
+                      <button
+                        onClick={() => confirmDelivered(order.id)}
+                        className="flex-1 border border-florist-500 text-florist-500 px-4 py-2 rounded-lg hover:bg-florist-50 transition-colors"
+                      >
+                        Confirm Delivery
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -244,36 +295,27 @@ const Orders: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      {order.status !== 'pending' && (
+                      {String(order.status).toUpperCase() !== 'PENDING' && (
                         <div className="flex items-center space-x-3">
                           <Clock size={20} className="text-blue-500" />
                           <div>
                             <p className="font-medium text-gray-900">Processing</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(order.createdAt.getTime() + 24 * 60 * 60 * 1000).toLocaleString()}
-                            </p>
                           </div>
                         </div>
                       )}
-                      {order.status === 'shipped' || order.status === 'delivered' ? (
+                      {(String(order.status).toUpperCase() === 'SHIPPED' || String(order.status).toUpperCase() === 'DELIVERED') && (
                         <div className="flex items-center space-x-3">
                           <Truck size={20} className="text-blue-500" />
                           <div>
                             <p className="font-medium text-gray-900">Shipped</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(order.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000).toLocaleString()}
-                            </p>
                           </div>
                         </div>
-                      ) : null}
-                      {order.status === 'delivered' && (
+                      )}
+                      {String(order.status).toUpperCase() === 'DELIVERED' && (
                         <div className="flex items-center space-x-3">
                           <CheckCircle size={20} className="text-green-500" />
                           <div>
                             <p className="font-medium text-gray-900">Delivered</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(order.createdAt.getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleString()}
-                            </p>
                           </div>
                         </div>
                       )}

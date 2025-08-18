@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ArrowRight, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, Star, Flower } from 'lucide-react';
 import { Product, Category } from '../types';
 import { apiService } from '../services/api';
 import ProductCard from '../components/products/ProductCard';
@@ -10,6 +10,7 @@ const Home: React.FC = () => {
   
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [randomCategories, setRandomCategories] = useState<Category[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,8 @@ const Home: React.FC = () => {
           name: bouquet.name,
           description: bouquet.description,
           price: bouquet.price || 0,
-          image: bouquet.image || '',
+          image: bouquet.imageUrl || bouquet.image || '', // Prioritize imageUrl for bouquets
+          imageUrl: bouquet.imageUrl,
           category: bouquet.category?.name || bouquet.categoryId?.toString() || '',
           inStock: bouquet.isActive ?? true,
           quantity: 1,
@@ -38,6 +40,9 @@ const Home: React.FC = () => {
         // Get first 6 products as featured
         setFeaturedProducts(mappedProducts.slice(0, 6));
         setCategories(categoriesData);
+        // pick 3 random categories to display on homepage
+        const shuffled = [...categoriesData].sort(() => Math.random() - 0.5);
+        setRandomCategories(shuffled.slice(0, Math.min(3, shuffled.length)));
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load featured products. Please try again later.');
@@ -175,18 +180,24 @@ const Home: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {categories.map((category) => (
+            {randomCategories.map((category) => (
               <Link
                 key={category.id}
-                to={`/products?category=${category.name.toLowerCase()}`}
+                to={`/products?category=${(category.categoryId ?? category.id ?? '').toString()}`}
                 className="group block"
               >
                 <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-all">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+                  {category.image ? (
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-gradient-to-br from-florist-100 to-florist-200 flex items-center justify-center">
+                      <Flower size={64} className="text-florist-600" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-40 transition-all"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-white">
@@ -197,6 +208,15 @@ const Home: React.FC = () => {
                 </div>
               </Link>
             ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              to="/categories"
+              className="inline-flex items-center px-6 py-3 border border-florist-500 text-florist-500 font-semibold rounded-md hover:bg-florist-500 hover:text-white transition-colors"
+            >
+              View More Categories
+              <ArrowRight className="ml-2" size={20} />
+            </Link>
           </div>
         </div>
       </section>

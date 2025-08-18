@@ -4,8 +4,8 @@ import { Product, CartItem } from '../types';
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string | number) => void;
+  updateQuantity: (productId: string | number, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
@@ -50,11 +50,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.product.id === product.id);
+      const existingItem = prevItems.find(item => item.product.id.toString() === product.id.toString());
       
       if (existingItem) {
         return prevItems.map(item =>
-          item.product.id === product.id
+          item.product.id.toString() === product.id.toString()
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
@@ -64,19 +64,21 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems(prevItems => prevItems.filter(item => item.product.id !== productId));
+  const removeFromCart = (productId: string | number) => {
+    const idString = productId.toString();
+    setItems(prevItems => prevItems.filter(item => item.product.id.toString() !== idString));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string | number, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
     
+    const idString = productId.toString();
     setItems(prevItems =>
       prevItems.map(item =>
-        item.product.id === productId
+        item.product.id.toString() === idString
           ? { ...item, quantity }
           : item
       )

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/currency';
 import { apiService } from '../services/api';
 import { User, Order } from '../types';
 import { 
@@ -582,7 +583,7 @@ const Profile: React.FC = () => {
                           <DollarSign size={16} className="text-florist-500" />
                           <span>Total</span>
                         </span>
-                        <span className="font-bold text-gray-900">${order.total.toFixed(2)}</span>
+                        <span className="font-bold text-gray-900">{formatCurrency(order.total)}</span>
                       </div>
                     </div>
                     

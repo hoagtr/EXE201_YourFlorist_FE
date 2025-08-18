@@ -1,10 +1,11 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Product, Category, Order, User, ApiResponse } from '../types';
+import { Product, Category, Order, User, ApiResponse, BouquetData, BouquetApiResponse, Flower, Feedback, Paged } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flourist-gkf7c9aefxcxb4ck.eastasia-01.azurewebsites.net/custom-florist/api/v1';
 
 class ApiService {
   private api: AxiosInstance;
+  private flowerCache: Map<number, Flower> = new Map();
 
   constructor() {
     this.api = axios.create({
@@ -50,8 +51,64 @@ class ApiService {
   }
 
   async getActiveBouquets(): Promise<Product[]> {
-    const response: AxiosResponse<ApiResponse<Product[]>> = await this.api.get('/bouquets/active');
-    return response.data.data;
+    try {
+      const response: AxiosResponse<ApiResponse<BouquetData[]>> = await this.api.get('/bouquets/active');
+      
+      // Map bouquet data to Product interface
+      return response.data.data.map(bouquet => ({
+        id: bouquet.id.toString(),
+        name: bouquet.name,
+        description: bouquet.description,
+        price: bouquet.price,
+        image: bouquet.imageUrl, // Map imageUrl to image
+        imageUrl: bouquet.imageUrl,
+        category: bouquet.category, // keep full category object
+        inStock: bouquet.isActive,
+        quantity: 1, // Default quantity for bouquets
+        tags: [],
+        isActive: bouquet.isActive,
+        compositions: bouquet.compositions,
+      }));
+    } catch (error: any) {
+      console.error('Get active bouquets error:', error);
+      
+      if (error.response?.status === 400) {
+        throw new Error('Invalid request parameters. Please try again.');
+      } else if (error.response?.status === 404) {
+        throw new Error('No active bouquets found.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        throw new Error('Failed to load active bouquets. Please try again.');
+      }
+    }
+  }
+
+  async getBouquetById(id: string | number): Promise<BouquetData> {
+    try {
+      const response: AxiosResponse<BouquetApiResponse> = await this.api.get(`/bouquets/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Get bouquet error:', error);
+      
+      if (error.response?.status === 400) {
+        throw new Error('Invalid bouquet ID. Please try again.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Bouquet not found.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+        throw new Error('Network error. Please check your connection and try again.');
+      } else {
+        throw new Error('Failed to load bouquet details. Please try again.');
+      }
+    }
   }
 
   async getProduct(id: string): Promise<Product> {
@@ -62,6 +119,30 @@ class ApiService {
   async getProductsByCategory(category: string): Promise<Product[]> {
     const response: AxiosResponse<ApiResponse<Product[]>> = await this.api.get(`/products/category/${category}`);
     return response.data.data;
+  }
+
+  // Flower endpoints (for bouquet compositions)
+  async getFlowerById(id: number): Promise<Flower> {
+    if (this.flowerCache.has(id)) {
+      return this.flowerCache.get(id)!;
+    }
+    try {
+      const response: AxiosResponse<ApiResponse<Flower>> = await this.api.get(`/flowers/${id}`);
+      const flower = response.data.data;
+      if (flower) {
+        this.flowerCache.set(id, flower);
+      }
+      return flower;
+    } catch (error: any) {
+      console.error('Get flower error:', error);
+      if (error.response?.status === 404) {
+        // Fallback with minimal info so UI can still function
+        const fallback: Flower = { id, name: `Flower #${id}`, price: 0 };
+        this.flowerCache.set(id, fallback);
+        return fallback;
+      }
+      throw error;
+    }
   }
 
   // Category endpoints
@@ -121,6 +202,34 @@ class ApiService {
   async getOrder(id: string): Promise<Order> {
     const response: AxiosResponse<ApiResponse<Order>> = await this.api.get(`/orders/${id}`);
     return response.data.data;
+  }
+
+  async getUserOrders(userId: string | number, params?: {
+    minOrderDate?: string; maxOrderDate?: string; minPrice?: number; maxPrice?: number; status?: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'; page?: number; size?: number; direction?: 'ASC' | 'DESC';
+  }): Promise<Order[]> {
+    const query = new URLSearchParams();
+    if (params?.minOrderDate) query.append('minOrderDate', params.minOrderDate);
+    if (params?.maxOrderDate) query.append('maxOrderDate', params.maxOrderDate);
+    if (params?.minPrice !== undefined) query.append('minPrice', String(params.minPrice));
+    if (params?.maxPrice !== undefined) query.append('maxPrice', String(params.maxPrice));
+    if (params?.status) query.append('status', params.status);
+    // Always include sensible defaults; some servers 500 without them
+    query.append('page', String(params?.page ?? 0));
+    query.append('size', String(params?.size ?? 50));
+    query.append('direction', params?.direction ?? 'ASC');
+    const url = `/orders/user/${userId}${query.toString() ? `?${query.toString()}` : ''}`;
+    const response: AxiosResponse<ApiResponse<Paged<Order>>> = await this.api.get(url);
+    const data = response.data?.data as any;
+    return (data && (data.content ?? data)) || [];
+  }
+
+  async getOrderById(orderId: string | number): Promise<Order> {
+    const response: AxiosResponse<ApiResponse<Order>> = await this.api.get(`/orders/${orderId}`);
+    return (response.data && (response.data as any).data) as unknown as Order;
+  }
+
+  async confirmCustomerStatus(orderId: string | number, status: 'DELIVERED' | 'CANCELLED', reason: string = ''): Promise<void> {
+    await this.api.patch(`/orders/${orderId}/customer-confirm-status`, { status, reason });
   }
 
   // User endpoints
@@ -417,6 +526,38 @@ class ApiService {
       } else {
         throw new Error('Google login failed. Please try again.');
       }
+    }
+  }
+
+  // Feedback endpoints
+  async getActiveFeedbacksByBouquet(bouquetId: number, page = 0, size = 50, sortBy = 'createdAt', sortDir: 'asc' | 'desc' = 'desc') {
+    const response: AxiosResponse<ApiResponse<Paged<Feedback>>> = await this.api.get(
+      `/feedbacks/bouquet/${bouquetId}/active`,
+      { params: { page, size, sortBy, sortDir } }
+    );
+    return response.data.data;
+  }
+
+  async createFeedback(payload: { userId: number; bouquetId: number; orderItemId?: number; rating: number; comment: string; isActive?: boolean; }) {
+    const response: AxiosResponse<ApiResponse<Feedback>> = await this.api.post('/feedbacks', payload);
+    return response.data.data;
+  }
+
+  // Place order (v1 payload)
+  async placeOrder(payload: any): Promise<any> {
+    const token = localStorage.getItem('token');
+    const headers: any = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await axios.post(`${API_BASE_URL}/orders`, payload, { headers, timeout: 60000 });
+      return (response.data && (response.data as any).data) as any;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        const response: AxiosResponse<ApiResponse<any>> = await axios.post(`${API_BASE_URL}/orders/`, payload, { headers, timeout: 60000 });
+        return (response.data && (response.data as any).data) as any;
+      }
+      throw err;
     }
   }
 }

@@ -32,13 +32,12 @@ const Categories: React.FC = () => {
         const categoriesData = await apiService.getCategories(debouncedSearchTerm);
         setCategories(categoriesData);
         
-        // Try to fetch products, but don't fail if it doesn't work
+        // Fetch active bouquets so we can count per-category items
         try {
-          const productsData = await apiService.getProducts();
-          setProducts(productsData);
+          const bouquets = await apiService.getActiveBouquets();
+          setProducts(bouquets);
         } catch (productsErr) {
-          console.warn('Failed to fetch products, but categories loaded successfully:', productsErr);
-          // Don't set error for products failure, just log it
+          console.warn('Failed to fetch bouquets for category counts:', productsErr);
         }
       } catch (err) {
         setError('Failed to load categories');
@@ -51,11 +50,16 @@ const Categories: React.FC = () => {
     fetchData();
   }, [debouncedSearchTerm]);
 
-  const getProductCount = (categoryName: string) => {
-    if (!products || products.length === 0) {
-      return 0; // Return 0 if products failed to load
+  const getProductCount = (categoryId: number | string | undefined) => {
+    if (!products || products.length === 0 || categoryId === undefined || categoryId === null) {
+      return 0;
     }
-    return products.filter(product => product.category === categoryName).length;
+    const idStr = categoryId.toString();
+    return products.filter(product => {
+      if (typeof product.category === 'string') return false;
+      const prodCatId = product.category?.categoryId?.toString();
+      return prodCatId === idStr;
+    }).length;
   };
 
   const filteredCategories = categories
@@ -126,7 +130,7 @@ const Categories: React.FC = () => {
             <div
               key={category.id || category.categoryId}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
+              onClick={() => navigate(`/products?category=${encodeURIComponent((category.categoryId ?? '').toString())}`)}
             >
               <div className="relative">
                 {category.image ? (
@@ -142,7 +146,7 @@ const Categories: React.FC = () => {
                 )}
                 <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-all"></div>
                 <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-full px-3 py-1 text-sm font-semibold text-gray-800">
-                  {getProductCount(category.name)} items
+                  {getProductCount(category.categoryId ?? '')} items
                 </div>
               </div>
               
@@ -185,18 +189,18 @@ const Categories: React.FC = () => {
         {/* Featured Categories Section */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Popular Categories</h2>
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-             {categories.slice(0, 4).map((category) => (
-               <div
-                 key={category.id || category.categoryId}
-                 className="text-center group cursor-pointer"
-                 onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
-               >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categories.slice(0, 4).map((category) => (
+              <div
+                key={category.id || category.categoryId}
+                className="text-center group cursor-pointer"
+                onClick={() => navigate(`/products?category=${encodeURIComponent((category.categoryId ?? '').toString())}`)}
+              >
                 <div className="w-20 h-20 mx-auto mb-4 bg-florist-100 rounded-full flex items-center justify-center group-hover:bg-florist-200 transition-colors">
                   <Flower size={32} className="text-florist-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                <p className="text-sm text-gray-600">{getProductCount(category.name)} products</p>
+                <p className="text-sm text-gray-600">{getProductCount(category.categoryId ?? '')} products</p>
               </div>
             ))}
           </div>
