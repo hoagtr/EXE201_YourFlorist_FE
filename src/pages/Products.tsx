@@ -4,6 +4,7 @@ import { Filter, Grid, List, Search, X } from 'lucide-react';
 import { Product, Category } from '../types';
 import { apiService } from '../services/api';
 import ProductCard from '../components/products/ProductCard';
+import { formatCurrency } from '../utils/currency';
 
 const Products: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +23,8 @@ const Products: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError('');
         const [bouquetsData, categoriesData] = await Promise.all([
           apiService.getActiveBouquets(),
           apiService.getCategories()
@@ -32,8 +35,9 @@ const Products: React.FC = () => {
           name: bouquet.name,
           description: bouquet.description,
           price: bouquet.price || 0,
-          image: bouquet.image || '',
-          category: bouquet.category?.name || bouquet.categoryId?.toString() || '',
+          image: bouquet.imageUrl || bouquet.image || '', // Prioritize imageUrl for bouquets
+          imageUrl: bouquet.imageUrl,
+          category: bouquet.category || bouquet.categoryId?.toString() || '',
           inStock: bouquet.isActive ?? true,
           quantity: 1,
           tags: [],
@@ -60,7 +64,16 @@ const Products: React.FC = () => {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory.toLowerCase();
+    const matchesCategory = !selectedCategory || (() => {
+      const isNumericParam = /^\d+$/.test(selectedCategory);
+      if (isNumericParam) {
+        if (typeof product.category === 'string') return false;
+        const prodCatId = product.category?.categoryId?.toString();
+        return prodCatId === selectedCategory;
+      }
+      const productCategory = typeof product.category === 'string' ? product.category : product.category.name.toLowerCase();
+      return productCategory === selectedCategory.toLowerCase();
+    })();
     const matchesPrice = (!priceRange.min || product.price >= parseFloat(priceRange.min)) &&
                         (!priceRange.max || product.price <= parseFloat(priceRange.max));
     
@@ -156,7 +169,7 @@ const Products: React.FC = () => {
                 >
                   <option value="">All Categories</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.name.toLowerCase()}>
+                    <option key={category.id} value={(category.categoryId ?? '').toString()}>
                       {category.name}
                     </option>
                   ))}

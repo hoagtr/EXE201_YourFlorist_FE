@@ -2,13 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/currency';
 import { useAuth } from '../context/AuthContext';
 
 const Cart: React.FC = () => {
   const { items, removeFromCart, updateQuantity, getTotalPrice, getShippingCost, getTaxAmount, getTotalWithFees, clearCart } = useCart();
   const { user } = useAuth();
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = (productId: string | number, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
     } else {
@@ -63,7 +64,7 @@ const Cart: React.FC = () => {
                     {/* Product Image */}
                     <div className="flex-shrink-0">
                       <img
-                        src={item.product.image}
+                        src={item.product.image || item.product.imageUrl || ''}
                         alt={item.product.name}
                         className="w-20 h-20 object-cover rounded-md"
                       />
@@ -74,11 +75,8 @@ const Cart: React.FC = () => {
                       <h3 className="text-lg font-medium text-gray-900">
                         {item.product.name}
                       </h3>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {item.product.category}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {item.product.description}
+                      <p className="text-sm text-gray-600">
+                        {typeof item.product.category === 'string' ? item.product.category : item.product.category.name}
                       </p>
                     </div>
 
@@ -103,12 +101,8 @@ const Cart: React.FC = () => {
 
                     {/* Price */}
                     <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900">
-                        ${(item.product.price * item.quantity).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        ${item.product.price.toFixed(2)} each
-                      </p>
+                      <p className="text-lg font-semibold text-gray-900">{formatCurrency(item.product.price * item.quantity)}</p>
+                      <p className="text-sm text-gray-500">{formatCurrency(item.product.price)} each</p>
                     </div>
 
                     {/* Remove Button */}
@@ -143,21 +137,21 @@ const Cart: React.FC = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-900">${getTotalPrice().toFixed(2)}</span>
+                <span className="text-gray-900">{formatCurrency(getTotalPrice())}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Shipping</span>
-                <span className="text-gray-900">${getShippingCost().toFixed(2)}</span>
+                <span className="text-gray-900">{formatCurrency(getShippingCost())}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Tax</span>
-                <span className="text-gray-900">${getTaxAmount().toFixed(2)}</span>
+                <span className="text-gray-900">{formatCurrency(getTaxAmount())}</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between font-semibold text-lg">
                   <span className="text-gray-900">Total</span>
                   <span className="text-gray-900">
-                    ${getTotalWithFees().toFixed(2)}
+                    {formatCurrency(getTotalWithFees())}
                   </span>
                 </div>
               </div>

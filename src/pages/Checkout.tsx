@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { formatCurrency } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { User, MapPin, Phone, Mail, Home, Building, Globe, Hash } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface CheckoutForm {
   firstName: string;
@@ -48,41 +50,40 @@ const Checkout: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      // Simulate API call to backend
-      const orderData = {
-        items: items.map(item => ({
-          productId: item.product.id,
+      // Build backend order payload according to POST /orders contract
+      const payload: any = {
+        userId: Number(user?.id),
+        promotionId: null,
+        totalPrice: Number(getTotalWithFees().toFixed(2)),
+        shippingAddress: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipCode}, ${formData.country}`,
+        orderItems: items.map((item) => ({
+          bouquetId: Number(item.product.id),
           quantity: item.quantity,
-          price: item.product.price
-        })),
-        subtotal: getTotalPrice(),
-        shipping: getShippingCost(),
-        tax: getTaxAmount(),
-        total: getTotalWithFees(),
-        shippingAddress: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          country: formData.country
-        },
-        customerInfo: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone
-        }
+          subTotal: Number((item.product.price * item.quantity).toFixed(2)),
+          isActive: true,
+          orderBouquetFlowers: [] as any[],
+        }))
       };
 
-      // This would be your actual API call
-      // const response = await api.post('/orders', orderData);
+      await apiService.placeOrder(payload);
 
-      // Simulate successful order
-      setTimeout(() => {
-        clearCart();
-        navigate('/checkout/success');
-      }, 2000);
+      // Optional: store local receipt for review eligibility as before
+      if (user) {
+        const key = `purchases:${user.id}`;
+        const existing: any[] = JSON.parse(localStorage.getItem(key) || '[]');
+        const now = Date.now();
+        const newItems = items.map((item, idx) => ({
+          orderItemId: Number(`${now}${idx}`),
+          bouquetId: typeof item.product.id === 'string' ? parseInt(item.product.id as string, 10) || item.product.id : (item.product.id as number),
+          productId: item.product.id,
+          quantity: item.quantity,
+          createdAt: new Date().toISOString()
+        }));
+        localStorage.setItem(key, JSON.stringify([...existing, ...newItems]));
+      }
 
+      clearCart();
+      navigate('/checkout/success');
     } catch (error) {
       console.error('Checkout error:', error);
       navigate('/checkout/fail');
@@ -122,7 +123,7 @@ const Checkout: React.FC = () => {
                 <div key={item.product.id} className="flex py-6">
                   <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                     <img
-                      src={item.product.image}
+                      src={item.product.image || item.product.imageUrl || ''}
                       alt={item.product.name}
                       className="h-full w-full object-cover object-center"
                     />
@@ -131,8 +132,12 @@ const Checkout: React.FC = () => {
                     <div>
                       <div className="flex justify-between text-base font-medium text-gray-900">
                         <h3>{item.product.name}</h3>
-                        <p className="ml-4">${(item.product.price * item.quantity).toFixed(2)}</p>
+                        <p className="ml-4">{formatCurrency(item.product.price * item.quantity)}</p>
                       </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {typeof item.product.category === 'string' ? item.product.category : item.product.category.name}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-600 line-clamp-2">{item.product.description}</p>
                       <p className="mt-1 text-sm text-gray-500">Qty: {item.quantity}</p>
                     </div>
                   </div>
@@ -141,19 +146,19 @@ const Checkout: React.FC = () => {
               <div className="border-t border-gray-200 py-6">
                 <div className="flex justify-between text-base font-medium text-gray-900">
                   <p>Subtotal</p>
-                  <p>${getTotalPrice().toFixed(2)}</p>
+                  <p>{formatCurrency(getTotalPrice())}</p>
                 </div>
                 <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
                   <p>Shipping</p>
-                  <p>${getShippingCost().toFixed(2)}</p>
+                  <p>{formatCurrency(getShippingCost())}</p>
                 </div>
                 <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
                   <p>Tax</p>
-                  <p>${getTaxAmount().toFixed(2)}</p>
+                  <p>{formatCurrency(getTaxAmount())}</p>
                 </div>
                 <div className="flex justify-between text-lg font-medium text-gray-900 mt-4 pt-4 border-t border-gray-200">
                   <p>Total</p>
-                  <p>${getTotalWithFees().toFixed(2)}</p>
+                  <p>{formatCurrency(getTotalWithFees())}</p>
                 </div>
               </div>
             </div>
@@ -398,7 +403,7 @@ const Checkout: React.FC = () => {
                       Processing...
                     </div>
                   ) : (
-                    `Proceed to Payment - $${getTotalWithFees().toFixed(2)}`
+                    `Proceed to Payment - ${formatCurrency(getTotalWithFees())}`
                   )}
                 </button>
                 <p className="mt-3 text-sm text-gray-500 text-center">
