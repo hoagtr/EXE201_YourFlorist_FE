@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Product, Category, Order, User, ApiResponse, BouquetData, BouquetApiResponse, Flower, Feedback, Paged } from '../types';
+import { Product, Category, Order, User, ApiResponse, BouquetData, BouquetApiResponse, Flower, Feedback, Paged, DeliveryHistory, OrderItem } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flourist-gkf7c9aefxcxb4ck.eastasia-01.azurewebsites.net/custom-florist/api/v1';
 
@@ -218,18 +218,167 @@ class ApiService {
     query.append('size', String(params?.size ?? 50));
     query.append('direction', params?.direction ?? 'ASC');
     const url = `/orders/user/${userId}${query.toString() ? `?${query.toString()}` : ''}`;
-    const response: AxiosResponse<ApiResponse<Paged<Order>>> = await this.api.get(url);
+    const response: AxiosResponse<ApiResponse<Paged<any>>> = await this.api.get(url);
     const data = response.data?.data as any;
-    return (data && (data.content ?? data)) || [];
+    const list: any[] = (data && (data.content ?? data)) || [];
+    return list.map((raw: any) => this.normalizeOrder(raw));
   }
 
   async getOrderById(orderId: string | number): Promise<Order> {
-    const response: AxiosResponse<ApiResponse<Order>> = await this.api.get(`/orders/${orderId}`);
-    return (response.data && (response.data as any).data) as unknown as Order;
+    const response: AxiosResponse<ApiResponse<any>> = await this.api.get(`/orders/${orderId}`);
+    const raw = (response.data && (response.data as any).data) as any;
+    return this.normalizeOrder(raw);
+  }
+
+  async getOrderWithDetails(orderId: string | number): Promise<Order> {
+    try {
+      // Call the backend endpoint that now returns orderItems
+      const response: AxiosResponse<ApiResponse<any>> = await this.api.get(`/orders/${orderId}`);
+      const orderData = response.data.data;
+      
+      // Use the normalizeOrder method to process the response
+      return this.normalizeOrder(orderData);
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+      // Fallback to basic order if detailed fetch fails
+      return await this.getOrderById(orderId);
+    }
+  }
+
+  // Fetch order items by their IDs (from orderItemIds array)
+  async getOrderItemsByIds(orderItemIds: Array<number | string>): Promise<OrderItem[]> {
+    const items: OrderItem[] = [];
+    for (const id of orderItemIds) {
+      try {
+        const item = await this.getOrderItemById(id);
+        items.push(item);
+      } catch (e) {
+        console.warn(`Failed to fetch order item ${id}:`, e);
+      }
+    }
+    return items;
+  }
+
+  async getOrderItemsByOrderId(orderId: string | number): Promise<OrderItem[]> {
+    try {
+      const res: AxiosResponse<ApiResponse<any[]>> = await this.api.get(`/order-items/order/${orderId}`);
+      return await this.normalizeOrderItems(res.data.data || []);
+    } catch (e1) {}
+    try {
+      const res: AxiosResponse<ApiResponse<any[]>> = await this.api.get(`/orders/${orderId}/items`);
+      return await this.normalizeOrderItems(res.data.data || []);
+    } catch (e2) {}
+    const ord = await this.getOrderById(orderId);
+    const ids = (ord as any).orderItemIds as Array<number | string> | undefined;
+    if (ids && ids.length) {
+      const items: OrderItem[] = [];
+      for (const id of ids) {
+        try { items.push(await this.getOrderItemById(id)); } catch {}
+      }
+      return items;
+    }
+    return [];
+  }
+
+  async getOrderItemById(orderItemId: number | string): Promise<OrderItem> {
+    const paths = [`/order-items/${orderItemId}`, `/orders/items/${orderItemId}`];
+    for (const p of paths) {
+      try {
+        const res: AxiosResponse<ApiResponse<any>> = await this.api.get(p);
+        const raw = res.data.data;
+        return (await this.normalizeOrderItems([raw]))[0];
+      } catch {}
+    }
+    throw new Error('Order item not found');
+  }
+
+  private async normalizeOrderItems(rawItems: any[]): Promise<OrderItem[]> {
+    const items: OrderItem[] = [];
+    for (const r of rawItems || []) {
+      const bouquetId = r.bouquetId || r.bouquet?.id || r.productId || r.itemBouquetId;
+      let product: Product | undefined = undefined;
+      if (bouquetId !== undefined && bouquetId !== null) {
+        try {
+          const bq = await this.getBouquetById(bouquetId);
+          product = {
+            id: bq.id,
+            name: bq.name,
+            description: bq.description,
+            price: bq.price,
+            image: bq.imageUrl,
+            imageUrl: bq.imageUrl,
+            category: bq.category,
+            inStock: bq.isActive,
+            quantity: 1,
+            tags: [],
+            isActive: bq.isActive,
+            compositions: bq.compositions,
+          } as unknown as Product;
+        } catch {}
+      }
+      items.push({
+        id: r.id || r.orderItemId || r.itemId,
+        bouquetId,
+        product,
+        quantity: r.quantity ?? r.qty ?? 1,
+        subTotal: r.subTotal ?? r.subtotal ?? r.price ?? undefined,
+        isActive: r.isActive ?? true,
+      });
+    }
+    return items;
+  }
+
+  private normalizeOrder(raw: any): Order {
+    const id = raw?.id ?? raw?.orderId ?? raw?.orderID;
+    const userId = raw?.userId ?? raw?.customerId ?? raw?.buyerId;
+    const status = raw?.status ?? raw?.orderStatus ?? 'PENDING';
+    const totalRaw = raw?.totalPrice ?? raw?.total ?? raw?.total_amount ?? raw?.amountTotal ?? raw?.priceTotal ?? raw?.grandTotal ?? 0;
+    const total = typeof totalRaw === 'string' ? Number(totalRaw) : Number(totalRaw ?? 0);
+    const created = raw?.createdAt ?? raw?.orderDate ?? raw?.createdOn ?? raw?.createdDate ?? raw?.timestamp ?? raw?.timeStamp ?? raw?.orderTime;
+    let createdAt: any = created;
+    if (typeof created === 'number') {
+      createdAt = new Date(created > 1e12 ? created : created * 1000).toISOString();
+    } else if (typeof created === 'string' && /^\d+$/.test(created)) {
+      const num = parseInt(created, 10);
+      createdAt = new Date(num > 1e12 ? num : num * 1000).toISOString();
+    }
+    const shipping = raw?.shippingAddress;
+    let shippingAddress: any = undefined;
+    if (shipping && typeof shipping === 'object') {
+      shippingAddress = shipping;
+    } else if (typeof shipping === 'string') {
+      shippingAddress = { street: shipping };
+    }
+    
+    // Map orderItems from backend to items for frontend
+    const items = raw?.orderItems || raw?.items;
+    
+    const ord: Order = {
+      id,
+      userId,
+      items: Array.isArray(items) ? items : undefined,
+      total,
+      status,
+      createdAt,
+      shippingAddress,
+    } as Order;
+    (ord as any).orderItemIds = raw?.orderItemIds;
+    return ord;
   }
 
   async confirmCustomerStatus(orderId: string | number, status: 'DELIVERED' | 'CANCELLED', reason: string = ''): Promise<void> {
     await this.api.patch(`/orders/${orderId}/customer-confirm-status`, { status, reason });
+  }
+
+  async getUserDeliveryHistories(userId: number | string, opts?: { status?: string; page?: number; size?: number; direction?: 'ASC' | 'DESC' }): Promise<Paged<DeliveryHistory>> {
+    const params: any = {
+      page: opts?.page ?? 0,
+      size: opts?.size ?? 50,
+      direction: opts?.direction ?? 'ASC',
+    };
+    if (opts?.status) params.status = opts.status;
+    const res: AxiosResponse<ApiResponse<Paged<DeliveryHistory>>> = await this.api.get(`/delivery-histories/active/user/${userId}`, { params });
+    return res.data.data;
   }
 
   // User endpoints
@@ -540,6 +689,31 @@ class ApiService {
 
   async createFeedback(payload: { userId: number; bouquetId: number; orderItemId?: number; rating: number; comment: string; isActive?: boolean; }) {
     const response: AxiosResponse<ApiResponse<Feedback>> = await this.api.post('/feedbacks', payload);
+    return response.data.data;
+  }
+
+  async updateFeedback(feedbackId: number, body: { rating: number; comment: string; }): Promise<Feedback> {
+    const response: AxiosResponse<ApiResponse<Feedback>> = await this.api.put(`/feedbacks/${feedbackId}`, body);
+    return response.data.data;
+  }
+
+  async softDeleteFeedback(feedbackId: number): Promise<void> {
+    await this.api.delete(`/feedbacks/${feedbackId}`, { data: { isActive: false } });
+  }
+
+  async getActiveFeedbacksByUser(userId: number, page = 0, size = 50, sortBy = 'createdAt', sortDir: 'asc' | 'desc' = 'desc') {
+    const response: AxiosResponse<ApiResponse<Paged<Feedback>>> = await this.api.get(
+      `/feedbacks/user/${userId}/active`,
+      { params: { page, size, sortBy, sortDir } }
+    );
+    return response.data.data;
+  }
+
+  async getFeedbacksByUser(userId: number, page = 0, size = 50, sortBy = 'createdAt', sortDir: 'asc' | 'desc' = 'desc') {
+    const response: AxiosResponse<ApiResponse<Paged<Feedback>>> = await this.api.get(
+      `/feedbacks/user/${userId}`,
+      { params: { page, size, sortBy, sortDir } }
+    );
     return response.data.data;
   }
 

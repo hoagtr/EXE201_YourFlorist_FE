@@ -575,7 +575,7 @@ const Profile: React.FC = () => {
                           <Package size={16} className="text-florist-500" />
                           <span>Items</span>
                         </span>
-                        <span className="font-medium">{order.items.length}</span>
+                        <span className="font-medium">{order.items?.length ?? 0}</span>
                       </div>
                       
                       <div className="flex items-center justify-between">

@@ -39,13 +39,13 @@ export interface Address {
 }
 
 export interface Order {
-  id: string;
-  userId: string;
-  items: CartItem[];
+  id: string | number;
+  userId: string | number;
+  items?: OrderItem[];
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  createdAt: Date;
-  shippingAddress: Address;
+  status: string;
+  createdAt: string | Date;
+  shippingAddress?: Address | string;
 }
 
 export interface Category {
@@ -119,4 +119,21 @@ export interface Paged<T> {
   totalPages?: number;
   number?: number;
   size?: number;
+}
+
+export interface OrderItem {
+  id: number | string;
+  bouquetId: number | string;
+  product?: Product;
+  quantity: number;
+  subTotal?: number;
+  isActive?: boolean;
+}
+
+export interface DeliveryHistory {
+  id: number;
+  orderId: number;
+  status: string;
+  note?: string;
+  createdAt: string | Date;
 } 

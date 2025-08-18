@@ -24,13 +24,8 @@ const ProductDetail: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
-  // Feedback state
+  // Feedback state for display only
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [rating, setRating] = useState<number>(5);
-  const [comment, setComment] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-  const [eligibleOrderItemId, setEligibleOrderItemId] = useState<number | null>(null);
-  const [resolvingOrderItem, setResolvingOrderItem] = useState<boolean>(false);
 
   const avgRating = feedbacks.length ? feedbacks.reduce((s, f) => s + (f.rating || 0), 0) / feedbacks.length : 0;
 
@@ -47,45 +42,7 @@ const ProductDetail: React.FC = () => {
     setProduct(prev => prev ? { ...prev, price } : prev);
   };
 
-  const tryResolveOrderItemFromBackend = useCallback(async (bouquetIdNum: number) => {
-    if (!user) return null;
-    try {
-      setResolvingOrderItem(true);
-      // 1) Get recent orders for the user (avoid depending on server-side status filter)
-      const orders: any[] = (await apiService.getUserOrders(user.id, {
-        page: 0,
-        size: 20,
-        direction: 'DESC',
-      })) as any[];
-      for (const ord of orders || []) {
-        const ordStatus = String(ord.status || '').toUpperCase();
-        if (ordStatus !== 'DELIVERED') continue;
-        const ordId = ord.id || ord.orderId;
-        if (!ordId) continue;
-        // 2) Load full order detail to read items reliably
-        let detail: any = null;
-        try {
-          detail = await apiService.getOrderById(ordId);
-        } catch (e) {
-          // If detail fails, skip gracefully
-          continue;
-        }
-        const items = (detail.items || detail.orderItems || detail.orderItemDtos || []) as any[];
-        for (const it of items) {
-          const bqId = Number(it.bouquetId || (it.bouquet && it.bouquet.id));
-          if (bqId === bouquetIdNum) {
-            const candidate = Number(it.id || it.orderItemId || it.itemId);
-            if (!isNaN(candidate)) return candidate;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Auto-resolve orderItemId failed; will keep form disabled.', e);
-    } finally {
-      setResolvingOrderItem(false);
-    }
-    return null;
-  }, [user]);
+
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -135,13 +92,11 @@ const ProductDetail: React.FC = () => {
 
           // Load active feedbacks for this bouquet
           const fbPaged = await apiService.getActiveFeedbacksByBouquet(bouquetData.id);
+          console.log('Raw feedback response:', fbPaged);
+          console.log('Feedback content:', fbPaged?.content);
           setFeedbacks(fbPaged?.content || []);
 
-          // Determine eligibility from local purchases (generated at checkout)
-          if (user) {
-            const resolved = await tryResolveOrderItemFromBackend(Number(bouquetData.id));
-            setEligibleOrderItemId(resolved);
-          }
+
         } catch (bouquetError) {
           // If bouquet fetch fails, try regular product
           console.log('Bouquet fetch failed, trying regular product:', bouquetError);
@@ -177,7 +132,7 @@ const ProductDetail: React.FC = () => {
     };
 
     fetchProduct();
-  }, [id, tryResolveOrderItemFromBackend]);
+  }, [id]);
 
   const handleAddToCart = () => {
     if (product) {
@@ -207,30 +162,7 @@ const ProductDetail: React.FC = () => {
     });
   };
 
-  const submitFeedback = async () => {
-    if (!user || !bouquetData || !rating || !comment.trim() || !eligibleOrderItemId) return;
 
-    try {
-      setSubmitting(true);
-      await apiService.createFeedback({
-        userId: Number(user.id),
-        bouquetId: bouquetData.id,
-        orderItemId: eligibleOrderItemId,
-        rating,
-        comment: comment.trim(),
-        isActive: true,
-      });
-      // Refresh list
-      const fbPaged = await apiService.getActiveFeedbacksByBouquet(bouquetData.id);
-      setFeedbacks(fbPaged?.content || []);
-      setRating(5);
-      setComment('');
-    } catch (e) {
-      console.error('Submit feedback error', e);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // Product images - using the main product image for all views
   const productImages = product ? [product.image || product.imageUrl || ''] : [''];
@@ -426,62 +358,51 @@ const ProductDetail: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Customer Reviews</h3>
               {feedbacks.length > 0 ? (
                 <div className="space-y-3">
-                  {feedbacks.map((fb) => (
-                    <div key={fb.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} className={`${i < fb.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-                          ))}
-                          <span className="text-sm text-gray-700">{fb.userName || 'User'}</span>
+                  {feedbacks.map((fb) => {
+                    console.log('Feedback object:', fb);
+                    console.log('Feedback createdAt:', fb.createdAt, 'Type:', typeof fb.createdAt);
+                    const userName = fb.userName || `User ${fb.userId}`;
+                    // Default to today's date; replace if a valid createdAt exists
+                    let createdAt = new Date().toLocaleDateString();
+                    if (fb.createdAt) {
+                      try {
+                        const date = new Date(fb.createdAt);
+                        if (!isNaN(date.getTime())) {
+                          createdAt = date.toLocaleDateString();
+                        } else {
+                          console.warn('Invalid date value for feedback:', fb.createdAt);
+                        }
+                      } catch (error) {
+                        console.warn('Invalid date format for feedback:', fb.createdAt, error);
+                      }
+                    } else {
+                      console.warn('No createdAt field for feedback; using today as fallback:', fb);
+                    }
+                    
+                    return (
+                      <div key={fb.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} size={14} className={`${i < fb.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                            ))}
+                            <span className="text-sm text-gray-700">{userName}</span>
+                            {!fb.userName && (
+                              <span className="text-xs text-gray-500">(Backend needs to populate user names)</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">{createdAt}</span>
                         </div>
-                        <span className="text-xs text-gray-500">{new Date(fb.createdAt || '').toLocaleDateString() || ''}</span>
+                        <p className="text-sm text-gray-700 mt-1">{fb.comment}</p>
                       </div>
-                      <p className="text-sm text-gray-700 mt-1">{fb.comment}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">No reviews yet.</p>
               )}
 
-              {/* Composition list already shown above */}
-
-              {user && bouquetData && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-700">Your rating:</span>
-                    {[...Array(5)].map((_, i) => (
-                      <button key={i} onClick={() => setRating(i + 1)}>
-                        <Star size={18} className={`${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Write your feedback..."
-                    className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-florist-500"
-                    rows={3}
-                  />
-                  {eligibleOrderItemId ? (
-                    <div className="text-xs text-green-600">Verified purchase • Order item ID: {eligibleOrderItemId}</div>
-                  ) : (
-                    <div className="text-xs text-gray-500">You can leave a review once this order is delivered. We’re checking your delivered orders…</div>
-                  )}
-                  <button
-                    onClick={submitFeedback}
-                    disabled={submitting || !comment.trim() || !eligibleOrderItemId || resolvingOrderItem}
-                    className="bg-florist-500 text-white px-4 py-2 rounded-md hover:bg-florist-600 disabled:opacity-50"
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Review'}
-                  </button>
-                </div>
-              )}
-
-              {user && bouquetData && !eligibleOrderItemId && (
-                <p className="text-sm text-gray-500">Only verified purchasers can leave a review for this bouquet.</p>
-              )}
+              {/* Reviews can be submitted from the Orders page */}
             </div>
 
             {/* Features */}
