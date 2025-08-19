@@ -556,7 +556,7 @@ const Profile: React.FC = () => {
                   <div key={order.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:shadow-md transition-all duration-200">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg">#{order.id}</h3>
+                        <h3 className="font-bold text-gray-900 text-lg">Order</h3>
                         <p className="text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -588,12 +588,6 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={() => navigate(`/orders/${order.id}`)}
-                      className="w-full mt-4 bg-white text-florist-600 border border-florist-200 py-2 rounded-lg hover:bg-florist-50 transition-colors font-medium text-sm"
-                    >
-                      View Details
-                    </button>
                   </div>
                 ))}
               </div>
