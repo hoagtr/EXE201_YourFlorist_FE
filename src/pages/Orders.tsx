@@ -18,6 +18,7 @@ const Orders: React.FC = () => {
   const [ratings, setRatings] = useState<Record<string, { rating: number; comment: string; submitted: boolean }>>({});
   const [showRatingForm, setShowRatingForm] = useState<Record<string, boolean>>({});
   const [feedbacks, setFeedbacks] = useState<Record<string, Feedback[]>>({});
+  const [userFeedbackByItem, setUserFeedbackByItem] = useState<Record<string, Feedback>>({});
 
   const loadOrders = useCallback(async () => {
     if (!user) return;
@@ -48,10 +49,9 @@ const Orders: React.FC = () => {
       );
       
       setOrders(ordersWithDetails);
-      
       // Load feedbacks for all orders in parallel
       await loadFeedbacksForOrders(ordersWithDetails);
-      
+      await loadCurrentUserFeedbacks();
       // fire-and-forget load of histories
       loadHistories();
       setError(null);
@@ -79,6 +79,7 @@ const Orders: React.FC = () => {
         
         setOrders(ordersWithDetails);
         await loadFeedbacksForOrders(ordersWithDetails);
+        await loadCurrentUserFeedbacks();
         setError(null);
       } catch (err2) {
         setError('Failed to load orders');
@@ -110,6 +111,22 @@ const Orders: React.FC = () => {
     }
     
     setFeedbacks(feedbacksMap);
+  };
+
+  const loadCurrentUserFeedbacks = async () => {
+    if (!user) return;
+    try {
+      const paged = await apiService.getActiveFeedbacksByUser(Number(user.id), 0, 200, 'createdAt', 'desc');
+      const map: Record<string, Feedback> = {};
+      for (const fb of (paged?.content || []) as any[]) {
+        if (fb && fb.orderItemId !== undefined && fb.orderItemId !== null) {
+          map[String(fb.orderItemId)] = fb as Feedback;
+        }
+      }
+      setUserFeedbackByItem(map);
+    } catch (e) {
+      console.warn('Failed to load current user feedbacks', e);
+    }
   };
 
   useEffect(() => {
@@ -423,7 +440,7 @@ const Orders: React.FC = () => {
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Order #{order.id}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">Order</h3>
                       <p className="text-sm text-gray-600">
                         Placed on {new Date(order.createdAt).toLocaleDateString()}
                       </p>
@@ -461,7 +478,7 @@ const Orders: React.FC = () => {
                     <div className="space-y-4">
                       {order.items.map((item: any, index: number) => {
                         const ratingKey = `${order.id}-${item.orderItemId || item.id}`;
-                        const itemRating = ratings[ratingKey];
+                        const itemRating = ratings[ratingKey] || (userFeedbackByItem[String(item.orderItemId || item.id)] ? { rating: userFeedbackByItem[String(item.orderItemId || item.id)].rating, comment: userFeedbackByItem[String(item.orderItemId || item.id)].comment || '', submitted: true } : undefined);
                         const isRatingFormVisible = showRatingForm[ratingKey];
                         
                         return (
@@ -517,6 +534,11 @@ const Orders: React.FC = () => {
                                         'item.orderItemId': item.orderItemId,
                                         'item.id': item.id
                                       });
+                                      const existing = userFeedbackByItem[String(itemIdToUse)];
+                                      if (existing) {
+                                        alert('You have already rated this product for this order.');
+                                        return;
+                                      }
                                       toggleRatingForm(order.id, itemIdToUse);
                                     }}
                                     className="text-sm text-florist-600 hover:text-florist-700 font-medium"

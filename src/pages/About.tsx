@@ -152,8 +152,8 @@ const About: React.FC = () => {
           </div>
         </div>
 
-        {/* Team Section */}
-        <div className="mb-20">
+        {/* Team Section (hidden per request) */}
+        {/* <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Meet Our Team</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -173,7 +173,7 @@ const About: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Contact Info */}
         <div className="bg-gradient-to-br from-florist-50 to-white rounded-xl shadow-lg p-8 border border-florist-100">

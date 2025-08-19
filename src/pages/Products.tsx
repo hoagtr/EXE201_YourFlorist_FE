@@ -163,7 +163,7 @@ const Products: React.FC = () => {
         {/* Filters Panel */}
         {showFilters && (
           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Category Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -188,26 +188,26 @@ const Products: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Price Range
                 </label>
-                <div className="flex space-x-2">
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     type="number"
                     placeholder="Min"
                     value={priceRange.min}
                     onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500"
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     value={priceRange.max}
                     onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500"
                   />
                 </div>
               </div>
 
               {/* Clear Filters */}
-              <div className="flex items-end">
+              <div className="flex items-end justify-start md:justify-end">
                 <button
                   onClick={clearFilters}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800"

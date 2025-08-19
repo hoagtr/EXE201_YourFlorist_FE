@@ -13,16 +13,24 @@ const GoogleCallback: React.FC = () => {
   useEffect(() => {
     const handleGoogleCallback = async () => {
       const code = searchParams.get('code');
+      const googleAccessToken = searchParams.get('google_access_token');
       
-      if (!code) {
-        setError('No authorization code received from Google.');
+      if (!code && !googleAccessToken) {
+        setError('No authorization code or Google token received.');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('GoogleCallback: Processing authorization code');
-        const token = await apiService.handleGoogleCallback(code);
+        console.log('GoogleCallback: Processing Google login callback');
+        let token = '';
+        if (googleAccessToken) {
+          // Direct exchange path using Google access token
+          token = await apiService.completeGoogleLogin(googleAccessToken);
+        } else if (code) {
+          // Authorization-code path
+          token = await apiService.handleGoogleCallback(code);
+        }
         console.log('GoogleCallback: Token received, storing in localStorage');
         
         // Store the token

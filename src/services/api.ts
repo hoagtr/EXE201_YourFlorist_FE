@@ -678,6 +678,30 @@ class ApiService {
     }
   }
 
+  // Exchange Google access token (ya29...) for our app JWT
+  async completeGoogleLogin(googleAccessToken: string): Promise<string> {
+    try {
+      const response: AxiosResponse<{ token: string } | { data?: string; jwt?: string }> = await axios.get(
+        `${API_BASE_URL}/auth/success`,
+        {
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+          },
+          timeout: 60000,
+        }
+      );
+      const data: any = response.data || {};
+      // Try multiple shapes defensively
+      return data.token || data.jwt || data.data || '';
+    } catch (error: any) {
+      console.error('Google success exchange error:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Google token is invalid or expired. Please try logging in again.');
+      }
+      throw new Error('Google login failed during token exchange. Please try again.');
+    }
+  }
+
   // Feedback endpoints
   async getActiveFeedbacksByBouquet(bouquetId: number, page = 0, size = 50, sortBy = 'createdAt', sortDir: 'asc' | 'desc' = 'desc') {
     const response: AxiosResponse<ApiResponse<Paged<Feedback>>> = await this.api.get(
@@ -752,10 +776,14 @@ class ApiService {
       return response.data.data;
     } catch (error: any) {
       // Provide clearer error messages for common cases
+      const serverMessage: string = error?.response?.data?.message || '';
       if (error.response?.status === 403) {
         throw new Error('You are not allowed to use this promotion. Please log in and try again.');
       }
       if (error.response?.status === 404) {
+        if (serverMessage.toLowerCase().includes('expired')) {
+          throw new Error('Promotion has expired.');
+        }
         throw new Error('Promotion not found.');
       }
       if (error.response?.status === 400) {
