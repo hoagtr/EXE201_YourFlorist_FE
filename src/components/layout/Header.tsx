@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Menu, X, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -7,17 +7,44 @@ import { useCart } from '../../context/CartContext';
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState('');
   const { user, logout } = useAuth();
   const { getTotalItems } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
+  const onSubmitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = headerSearch.trim();
+    if (!q) {
+      navigate('/products');
+    } else {
+      navigate(`/products?keyword=${encodeURIComponent(q)}`);
+    }
+    setIsSearchOpen(false);
+  };
+
+  useEffect(() => {
+    const handler = () => setIsScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', handler);
+    handler();
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  useEffect(() => {
+    // Close menus/search when route changes
+    setIsMenuOpen(false);
+    setIsSearchOpen(false);
+  }, [location.pathname]);
+
   return (
-    <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+    <header className={`sticky top-0 z-50 border-b border-gray-100 ${isScrolled ? 'bg-white/80 backdrop-blur shadow-sm' : 'bg-white'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -34,32 +61,59 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-florist-600 transition-colors">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) => `transition-colors ${isActive ? 'text-florist-600 font-medium' : 'text-gray-700 hover:text-florist-600'}`}
+            >
               Home
-            </Link>
-            <Link to="/products" className="text-gray-700 hover:text-florist-600 transition-colors">
+            </NavLink>
+            <NavLink
+              to="/products"
+              className={({ isActive }) => `transition-colors ${isActive ? 'text-florist-600 font-medium' : 'text-gray-700 hover:text-florist-600'}`}
+            >
               Products
-            </Link>
-            <Link to="/categories" className="text-gray-700 hover:text-florist-600 transition-colors">
+            </NavLink>
+            <NavLink
+              to="/categories"
+              className={({ isActive }) => `transition-colors ${isActive ? 'text-florist-600 font-medium' : 'text-gray-700 hover:text-florist-600'}`}
+            >
               Categories
-            </Link>
-            <Link to="/about" className="text-gray-700 hover:text-florist-600 transition-colors">
+            </NavLink>
+            <NavLink
+              to="/about"
+              className={({ isActive }) => `transition-colors ${isActive ? 'text-florist-600 font-medium' : 'text-gray-700 hover:text-florist-600'}`}
+            >
               About
-            </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-florist-600 transition-colors">
+            </NavLink>
+            <NavLink
+              to="/contact"
+              className={({ isActive }) => `transition-colors ${isActive ? 'text-florist-600 font-medium' : 'text-gray-700 hover:text-florist-600'}`}
+            >
               Contact
-            </Link>
+            </NavLink>
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4 relative z-50 pointer-events-auto">
-            {/* Search */}
+          <div className="hidden md:flex items-center space-x-3 relative z-50 pointer-events-auto">
+            {/* Toggle search icon */}
             <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              onClick={() => setIsSearchOpen((v) => !v)}
               className="inline-flex items-center justify-center p-2 leading-none text-gray-600 hover:text-florist-600 transition-colors"
+              aria-label="Search"
             >
               <Search size={20} />
             </button>
+            {/* Expanding search input */}
+            <form onSubmit={onSubmitSearch} className={`relative overflow-hidden transition-all duration-200 ${isSearchOpen ? 'w-56 lg:w-72 opacity-100' : 'w-0 opacity-0 pointer-events-none'}`}>
+              <input
+                value={headerSearch}
+                onChange={(e) => setHeaderSearch(e.target.value)}
+                type="text"
+                placeholder="Search bouquets..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-transparent"
+              />
+            </form>
 
             {/* Cart */}
             <Link to="/cart" className="relative inline-flex items-center justify-center p-2 leading-none text-gray-600 hover:text-florist-600 transition-colors">
@@ -120,17 +174,18 @@ const Header: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar (mobile) */}
         {isSearchOpen && (
-          <div className="py-4 border-t border-gray-100">
-            <div className="relative">
+          <div className="md:hidden py-4 border-t border-gray-100">
+            <form onSubmit={onSubmitSearch} className="relative">
               <input
                 type="text"
+                value={headerSearch}
+                onChange={(e) => setHeaderSearch(e.target.value)}
                 placeholder="Search for flowers, bouquets..."
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500 focus:border-transparent"
               />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-            </div>
+            </form>
           </div>
         )}
 
@@ -173,6 +228,12 @@ const Header: React.FC = () => {
               >
                 Contact
               </Link>
+              <button
+                onClick={() => setIsSearchOpen((v) => !v)}
+                className="text-left text-gray-700 hover:text-florist-600 transition-colors"
+              >
+                {isSearchOpen ? 'Hide Search' : 'Search'}
+              </button>
               <Link
                 to="/cart"
                 className="text-gray-700 hover:text-florist-600 transition-colors"

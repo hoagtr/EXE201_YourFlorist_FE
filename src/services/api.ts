@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Product, Category, Order, User, ApiResponse, BouquetData, BouquetApiResponse, Flower, Feedback, Paged, DeliveryHistory, OrderItem } from '../types';
+import { Product, Category, Order, User, ApiResponse, BouquetData, BouquetApiResponse, Flower, Feedback, Paged, DeliveryHistory, OrderItem, Promotion } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flourist-gkf7c9aefxcxb4ck.eastasia-01.azurewebsites.net/custom-florist/api/v1';
 
@@ -743,6 +743,26 @@ class ApiService {
     const data: any = res?.data;
     const checkoutUrl = data?.data?.checkoutUrl || data?.checkoutUrl || data?.data?.url || data?.url || '';
     return checkoutUrl;
+  }
+
+  // Promotions
+  async getPromotionByCode(code: string): Promise<Promotion> {
+    try {
+      const response: AxiosResponse<ApiResponse<Promotion>> = await this.api.get(`/promotions/code/${encodeURIComponent(code)}`);
+      return response.data.data;
+    } catch (error: any) {
+      // Provide clearer error messages for common cases
+      if (error.response?.status === 403) {
+        throw new Error('You are not allowed to use this promotion. Please log in and try again.');
+      }
+      if (error.response?.status === 404) {
+        throw new Error('Promotion not found.');
+      }
+      if (error.response?.status === 400) {
+        throw new Error('Invalid promotion code.');
+      }
+      throw error;
+    }
   }
 }
 

@@ -19,6 +19,7 @@ const Products: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const categoryParam = searchParams.get('category');
+  const keywordParam = searchParams.get('keyword') || searchParams.get('q') || '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +61,12 @@ const Products: React.FC = () => {
       setSelectedCategory(categoryParam);
     }
   }, [categoryParam]);
+
+  useEffect(() => {
+    if (keywordParam) {
+      setSearchTerm(keywordParam);
+    }
+  }, [keywordParam]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
