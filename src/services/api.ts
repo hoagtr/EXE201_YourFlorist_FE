@@ -341,6 +341,11 @@ class ApiService {
     } else if (typeof created === 'string' && /^\d+$/.test(created)) {
       const num = parseInt(created, 10);
       createdAt = new Date(num > 1e12 ? num : num * 1000).toISOString();
+    } else if (typeof created === 'string') {
+      const parsed = Date.parse(created);
+      createdAt = isNaN(parsed) ? new Date().toISOString() : new Date(parsed).toISOString();
+    } else if (!created) {
+      createdAt = new Date().toISOString();
     }
     const shipping = raw?.shippingAddress;
     let shippingAddress: any = undefined;
