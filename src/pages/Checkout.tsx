@@ -77,6 +77,7 @@ const Checkout: React.FC = () => {
         promotionId: promotionId ?? null,
         totalPrice: Number((getTotalAfterDiscount() + getShippingCost() + getTaxAmount()).toFixed(2)),
         shippingAddress: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipCode}, ${formData.country}`,
+        createdAt: new Date().toISOString(),
         orderItems: items.map((item) => ({
           bouquetId: Number(item.product.id),
           quantity: item.quantity,

@@ -46,8 +46,9 @@ const Profile: React.FC = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const ordersData = await apiService.getOrders();
-        setOrders(ordersData);
+        const uid = isNaN(Number(user.id)) ? user.id : Number(user.id);
+        const ordersData = await apiService.getUserOrders(uid as any, { page: 0, size: 50, direction: 'DESC' });
+        setOrders(ordersData || []);
       } catch (err) {
         setError('Failed to load order history');
         console.error('Error fetching orders:', err);
