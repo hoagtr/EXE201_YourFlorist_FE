@@ -137,3 +137,12 @@ export interface DeliveryHistory {
   note?: string;
   createdAt: string | Date;
 } 
+
+export interface Promotion {
+  id: number;
+  code: string;
+  discountPercentage: number; // 0-100
+  validFrom?: string;
+  validTo?: string;
+  isActive?: boolean;
+}

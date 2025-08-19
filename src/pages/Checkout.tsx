@@ -20,7 +20,7 @@ interface CheckoutForm {
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
-  const { items, getTotalPrice, getShippingCost, getTaxAmount, getTotalWithFees, clearCart } = useCart();
+  const { items, getTotalPrice, getShippingCost, getTaxAmount, getTotalWithFees, clearCart, promotionId, promotionCode, discountPercentage, setPromotion, getDiscountAmount, getTotalAfterDiscount } = useCart();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState<CheckoutForm>({
@@ -36,6 +36,27 @@ const Checkout: React.FC = () => {
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  const applyPromotion = async () => {
+    setPromoError(null);
+    try {
+      const code = promoInput.trim();
+      if (!code) {
+        setPromotion(null);
+        return;
+      }
+      const promo = await apiService.getPromotionByCode(code);
+      if (!promo || promo.isActive === false) {
+        throw new Error('Invalid or inactive code');
+      }
+      setPromotion({ id: promo.id, code: promo.code, discountPercentage: promo.discountPercentage });
+    } catch (err: any) {
+      setPromotion(null);
+      setPromoError(err?.message || 'Invalid promotion code');
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -53,8 +74,8 @@ const Checkout: React.FC = () => {
       // Build backend order payload according to POST /orders contract
       const payload: any = {
         userId: Number(user?.id),
-        promotionId: null,
-        totalPrice: Number(getTotalWithFees().toFixed(2)),
+        promotionId: promotionId ?? null,
+        totalPrice: Number((getTotalAfterDiscount() + getShippingCost() + getTaxAmount()).toFixed(2)),
         shippingAddress: `${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipCode}, ${formData.country}`,
         orderItems: items.map((item) => ({
           bouquetId: Number(item.product.id),
@@ -160,6 +181,16 @@ const Checkout: React.FC = () => {
                   <p>Subtotal</p>
                   <p>{formatCurrency(getTotalPrice())}</p>
                 </div>
+                {(discountPercentage ?? 0) > 0 && (
+                  <div className="flex justify-between text-base font-medium text-gray-900 mt-2 text-green-600">
+                    <p>Discount ({discountPercentage}%{promotionCode ? ` · ${promotionCode}` : ''})</p>
+                    <p>-{formatCurrency(getDiscountAmount())}</p>
+                  </div>
+                )}
+                <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
+                  <p>Subtotal after discount</p>
+                  <p>{formatCurrency(getTotalAfterDiscount())}</p>
+                </div>
                 <div className="flex justify-between text-base font-medium text-gray-900 mt-2">
                   <p>Shipping</p>
                   <p>{formatCurrency(getShippingCost())}</p>
@@ -170,7 +201,7 @@ const Checkout: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-lg font-medium text-gray-900 mt-4 pt-4 border-t border-gray-200">
                   <p>Total</p>
-                  <p>{formatCurrency(getTotalWithFees())}</p>
+                  <p>{formatCurrency(getTotalAfterDiscount() + getShippingCost() + getTaxAmount())}</p>
                 </div>
               </div>
             </div>
@@ -179,6 +210,28 @@ const Checkout: React.FC = () => {
           {/* Checkout Form */}
           <div className="mt-10 lg:col-span-1 lg:mt-0">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Promotion Code */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Promotion</h3>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Enter promo code"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-florist-500"
+                  />
+                  <button type="button" onClick={applyPromotion} className="px-4 py-2 bg-florist-500 text-white rounded-md hover:bg-florist-600">Apply</button>
+                  {(discountPercentage ?? 0) > 0 && (
+                    <button type="button" onClick={() => setPromotion(null)} className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800">Remove</button>
+                  )}
+                </div>
+                {promoError && <p className="text-sm text-red-600 mt-2">{promoError}</p>}
+                {(discountPercentage ?? 0) > 0 && (
+                  <p className="text-sm text-green-700 mt-2">Applied {promotionCode} for {discountPercentage}% off.</p>
+                )}
+              </div>
+
               {/* Customer Information */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center mb-6">

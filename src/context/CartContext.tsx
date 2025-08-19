@@ -12,6 +12,13 @@ interface CartContextType {
   getShippingCost: () => number;
   getTaxAmount: () => number;
   getTotalWithFees: () => number;
+  // Promotions
+  promotionId?: number | null;
+  promotionCode?: string | null;
+  discountPercentage?: number;
+  setPromotion: (promo: { id: number; code: string; discountPercentage: number } | null) => void;
+  getDiscountAmount: () => number;
+  getTotalAfterDiscount: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -30,6 +37,9 @@ interface CartProviderProps {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [promotionId, setPromotionId] = useState<number | null>(null);
+  const [promotionCode, setPromotionCode] = useState<string | null>(null);
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -47,6 +57,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
+
+  // Persist promotion in localStorage
+  useEffect(() => {
+    const data = promotionId ? { promotionId, promotionCode, discountPercentage } : null;
+    localStorage.setItem('cart_promotion', JSON.stringify(data));
+  }, [promotionId, promotionCode, discountPercentage]);
+
+  // Load promotion on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cart_promotion');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data.discountPercentage === 'number') {
+          setPromotionId(data.promotionId ?? null);
+          setPromotionCode(data.promotionCode ?? null);
+          setDiscountPercentage(data.discountPercentage ?? 0);
+        }
+      }
+    } catch {}
+  }, []);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setItems(prevItems => {
@@ -109,6 +140,29 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return getTotalPrice() + getShippingCost() + getTaxAmount();
   };
 
+  const getDiscountAmount = () => {
+    const subtotal = getTotalPrice();
+    return Math.max(0, Math.round((subtotal * discountPercentage) / 100));
+  };
+
+  const getTotalAfterDiscount = () => {
+    const subtotal = getTotalPrice();
+    const discount = getDiscountAmount();
+    return Math.max(0, subtotal - discount);
+  };
+
+  const setPromotion = (promo: { id: number; code: string; discountPercentage: number } | null) => {
+    if (!promo) {
+      setPromotionId(null);
+      setPromotionCode(null);
+      setDiscountPercentage(0);
+      return;
+    }
+    setPromotionId(promo.id);
+    setPromotionCode(promo.code);
+    setDiscountPercentage(promo.discountPercentage);
+  };
+
   const value: CartContextType = {
     items,
     addToCart,
@@ -120,6 +174,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     getShippingCost,
     getTaxAmount,
     getTotalWithFees,
+    promotionId,
+    promotionCode,
+    discountPercentage,
+    setPromotion,
+    getDiscountAmount,
+    getTotalAfterDiscount,
   };
 
   return (
