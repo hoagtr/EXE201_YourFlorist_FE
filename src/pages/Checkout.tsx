@@ -469,7 +469,7 @@ const Checkout: React.FC = () => {
                       Processing...
                     </div>
                   ) : (
-                    `Proceed to Payment - ${formatCurrency(getTotalWithFees())}`
+                    `Proceed to Payment - ${formatCurrency(getTotalAfterDiscount() + getShippingCost() + getTaxAmount())}`
                   )}
                 </button>
                 <p className="mt-3 text-sm text-gray-500 text-center">
